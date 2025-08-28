@@ -1,0 +1,135 @@
+---
+alwaysApply: true
+---
+
+# React Component Guidelines
+
+## TypeScript Best Practices
+
+- **Never use `any` type** - Always define proper types or use `unknown` if needed
+- **Define interfaces for props** - Create clear, typed interfaces for all component props
+- **Use generic types** - Leverage TypeScript generics for reusable components
+- **Export types** - Make interfaces and types available for consumers
+
+```tsx
+// ✅ Good
+interface ButtonProps {
+  label: string
+  onClick: () => void
+  variant?: 'primary' | 'secondary'
+}
+
+// ❌ Bad
+interface ButtonProps {
+  label: any
+  onClick: any
+  variant: any
+}
+```
+
+## Component Structure
+
+- **Use functional components** - Prefer function components over class components
+- **PascalCase naming** - Component names should be PascalCase
+- **Destructure props** - Extract props at the component level for clarity
+- **Default props** - Use default parameters or optional chaining
+
+```tsx
+// ✅ Good
+interface UserCardProps {
+  name: string
+  email: string
+  isActive?: boolean
+}
+
+export function UserCard({ name, email, isActive = false }: UserCardProps) {
+  return (
+    <div className="user-card">
+      <h3>{name}</h3>
+      <p>{email}</p>
+      {isActive && <span>Active</span>}
+    </div>
+  )
+}
+
+// ❌ Bad
+export function UserCard(props: any) {
+  return <div>{props.name}</div>
+}
+```
+
+## Comments and Documentation
+
+- **English comments only** - All comments must be in English
+- **Keep comments simple** - Brief, clear explanations
+- **Document complex logic** - Explain non-obvious business logic
+- **JSDoc for public APIs** - Use JSDoc for exported functions and components
+
+```tsx
+// ✅ Good
+/**
+ * Renders a data table with inline editing capabilities
+ */
+export function WiseTable<T>({ data, columns }: WiseTableProps<T>) {
+  // Handle keyboard navigation for spreadsheet-like experience
+  const handleKeyDown = (event: KeyboardEvent) => {
+    // Implementation here
+  }
+}
+
+// ❌ Bad
+// 이 컴포넌트는 테이블을 렌더링합니다
+export function WiseTable(props: any) {
+  // 복잡한 로직이 여기에 있음
+}
+```
+
+## File Organization
+
+- **One component per file** - Keep components focused and testable
+- **Index exports** - Use index.ts files for clean imports
+- **Co-locate related files** - Keep types, hooks, and components together
+
+```
+src/
+  components/
+    WiseTable/
+      index.ts          // Export component
+      WiseTable.tsx     // Main component
+      types.ts          // Component-specific types
+      hooks.ts          // Component-specific hooks
+```
+
+## Naming Conventions
+
+- **Components**: PascalCase (`WiseTable`, `UserCard`)
+- **Props interfaces**: ComponentName + Props (`WiseTableProps`)
+- **Hooks**: camelCase with 'use' prefix (`useTableData`)
+- **Event handlers**: 'handle' + Action (`handleRowClick`)
+- **Boolean props**: 'is' or 'has' prefix (`isLoading`, `hasError`)
+
+## State Management
+
+- **Minimize state** - Keep component state as simple as possible
+- **Lift state up** - Move shared state to appropriate parent components
+- **Use custom hooks** - Extract complex state logic into reusable hooks
+
+```tsx
+// ✅ Good
+interface TableData {
+  id: string
+  name: string
+}
+
+function useTableData(initialData: TableData[]) {
+  const [data, setData] = useState<TableData[]>(initialData)
+  const [isLoading, setIsLoading] = useState(false)
+
+  return { data, setData, isLoading, setIsLoading }
+}
+
+// ❌ Bad
+function Component() {
+  const [stuff, setStuff] = useState<any>({})
+}
+```

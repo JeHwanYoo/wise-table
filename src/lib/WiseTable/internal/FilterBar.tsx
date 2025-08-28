@@ -1,0 +1,359 @@
+import React, { useState } from 'react'
+import { useFilter } from '../hooks/useFilter'
+import { useEditingContext } from '../hooks/useWiseTable'
+import { CloseIcon, SearchBox, WiseTableButton } from '../ui'
+
+// Active filter display type
+type ActiveFilter = {
+  key: string
+  label: string
+  type: 'string' | 'number' | 'date' | 'boolean' | 'select'
+  // mutually exclusive by type
+  value?: string
+  bool?: boolean
+  start?: string
+  end?: string
+}
+
+export interface FilterBarProps {
+  className?: string
+}
+
+export const FilterBar = React.memo(function FilterBar({
+  className = '',
+}: FilterBarProps) {
+  const { hasUnsavedChanges, discardChanges } = useEditingContext()
+  const filter = useFilter()
+
+  const [selectedKey, setSelectedKey] = useState<string>(
+    filter.filterOptions.fields[0]?.key as string,
+  )
+  const [value, setValue] = useState<string>('')
+  const [boolValue, setBoolValue] = useState<boolean>(false)
+  const [dateStart, setDateStart] = useState<string>('')
+  const [dateEnd, setDateEnd] = useState<string>('')
+
+  // Convert current filters to active filter array
+  const activeFilters: ActiveFilter[] = []
+  Object.entries(filter.currentFilters).forEach(([key, value]) => {
+    const field = filter.filterOptions.fields.find(
+      (f: {
+        key: string
+        type: 'string' | 'number' | 'date' | 'boolean' | 'select'
+        label: string
+      }) =>
+        f.key === key ||
+        key.startsWith(`start_${f.key}`) ||
+        key.startsWith(`end_${f.key}`),
+    )
+    if (!field) return
+
+    if (key.startsWith('start_') || key.startsWith('end_')) {
+      const fieldKey = key.replace(/^start_|^end_/, '')
+      const fieldObj = filter.filterOptions.fields.find(
+        (f: {
+          key: string
+          type: 'string' | 'number' | 'date' | 'boolean' | 'select'
+          label: string
+        }) => f.key === fieldKey,
+      )
+      if (fieldObj?.type === 'date') {
+        const existing = activeFilters.find((af) => af.key === fieldKey)
+        if (existing && existing.type === 'date') {
+          if (key.startsWith('start_')) existing.start = String(value)
+          if (key.startsWith('end_')) existing.end = String(value)
+        } else {
+          activeFilters.push({
+            key: fieldKey,
+            label: fieldObj.label,
+            type: 'date',
+            start: key.startsWith('start_') ? String(value) : '',
+            end: key.startsWith('end_') ? String(value) : '',
+          })
+        }
+      }
+    } else if (field.type === 'boolean') {
+      activeFilters.push({
+        key,
+        label: field.label,
+        type: 'boolean',
+        bool: Boolean(value),
+      })
+    } else {
+      activeFilters.push({
+        key,
+        label: field.label,
+        type: field.type,
+        value: String(value),
+      })
+    }
+  })
+
+  if (!filter.enableFilters) return null
+
+  const handleAddFilter = () => {
+    const field = filter.filterOptions.fields.find((f) => f.key === selectedKey)
+    if (!field || !selectedKey) return
+
+    if (field.type === 'boolean') {
+      filter.updateFilter(selectedKey, boolValue)
+    } else if (field.type === 'date') {
+      if (dateStart) filter.updateFilter(`start_${selectedKey}`, dateStart)
+      if (dateEnd) filter.updateFilter(`end_${selectedKey}`, dateEnd)
+    } else {
+      if (value.trim()) filter.updateFilter(selectedKey, value.trim())
+    }
+
+    // Reset form
+    setValue('')
+    setBoolValue(false)
+    setDateStart('')
+    setDateEnd('')
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddFilter()
+    }
+  }
+
+  const removeFilter = (filterToRemove: ActiveFilter) => {
+    if (filterToRemove.type === 'date') {
+      filter.removeFilter(`start_${filterToRemove.key}`)
+      filter.removeFilter(`end_${filterToRemove.key}`)
+    } else {
+      filter.removeFilter(filterToRemove.key)
+    }
+  }
+
+  const getDisplayValue = (activeFilter: ActiveFilter): string => {
+    if (activeFilter.type === 'boolean') {
+      return activeFilter.bool ? 'True' : 'False'
+    }
+    if (activeFilter.type === 'date') {
+      const parts = []
+      if (activeFilter.start) parts.push(`From: ${activeFilter.start}`)
+      if (activeFilter.end) parts.push(`To: ${activeFilter.end}`)
+      return parts.join(', ')
+    }
+    return activeFilter.value || ''
+  }
+
+  const selectedField = filter.filterOptions.fields.find(
+    (f) => f.key === selectedKey,
+  )
+
+  const renderFilterInput = () => {
+    if (!selectedField) return null
+
+    switch (selectedField.type) {
+      case 'boolean':
+        return (
+          <select
+            value={boolValue ? 'true' : 'false'}
+            onChange={(e) => setBoolValue(e.target.value === 'true')}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+          >
+            <option value="true">True</option>
+            <option value="false">False</option>
+          </select>
+        )
+
+      case 'select':
+        return (
+          <select
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+          >
+            <option value="">Select...</option>
+            {selectedField.options?.map(
+              (option: { label: string; value: string | number | boolean }) => (
+                <option key={String(option.value)} value={String(option.value)}>
+                  {option.label}
+                </option>
+              ),
+            )}
+          </select>
+        )
+
+      case 'date':
+        return (
+          <div className="flex space-x-2">
+            <input
+              type="date"
+              value={dateStart}
+              onChange={(e) => setDateStart(e.target.value)}
+              placeholder="From"
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+            />
+            <input
+              type="date"
+              value={dateEnd}
+              onChange={(e) => setDateEnd(e.target.value)}
+              placeholder="To"
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+            />
+          </div>
+        )
+
+      case 'number':
+        return (
+          <input
+            type="number"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={selectedField.placeholder || 'Enter number...'}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+          />
+        )
+
+      default:
+        return (
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={selectedField.placeholder || 'Enter value...'}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+          />
+        )
+    }
+  }
+
+  return (
+    <div
+      className={`p-4 bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-800 ${className}`}
+    >
+      <div className="flex flex-col space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {filter.useSearch && (
+            <SearchBox
+              value={filter.searchValue}
+              onChange={filter.updateSearch}
+              placeholder="Type to search..."
+              className="flex-1 min-w-64"
+            />
+          )}
+
+          {filter.filterOptions.fields.length > 0 && (
+            <>
+              <select
+                value={selectedKey}
+                onChange={(e) => setSelectedKey(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-32 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+              >
+                <option value="">Select field...</option>
+                {filter.filterOptions.fields.map(
+                  (field: { key: string; label: string }) => (
+                    <option key={field.key} value={field.key}>
+                      {field.label}
+                    </option>
+                  ),
+                )}
+              </select>
+
+              {renderFilterInput()}
+
+              <WiseTableButton
+                onClick={handleAddFilter}
+                disabled={!selectedKey}
+              >
+                Add Filter
+              </WiseTableButton>
+
+              {activeFilters.length > 0 && (
+                <WiseTableButton
+                  onClick={filter.clearAllFilters}
+                  variant="secondary"
+                >
+                  Clear All
+                </WiseTableButton>
+              )}
+            </>
+          )}
+        </div>
+
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {activeFilters.map((activeFilter, index) => (
+              <div
+                key={`${activeFilter.key}-${index}`}
+                className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm dark:bg-blue-800/30 dark:text-blue-200"
+              >
+                <span className="font-medium">{activeFilter.label}:</span>
+                <span className="ml-1">{getDisplayValue(activeFilter)}</span>
+                <WiseTableButton
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => removeFilter(activeFilter)}
+                  aria-label={`Remove ${activeFilter.label} filter`}
+                  className="ml-1 !p-0.5 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200"
+                >
+                  <CloseIcon size="sm" />
+                </WiseTableButton>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {filter.filterOptions.enableQuickFilters &&
+          filter.filterOptions.quickFilters && (
+            <div className="flex flex-wrap gap-2">
+              <span className="text-sm text-gray-600 self-center dark:text-gray-400">
+                Quick filters:
+              </span>
+              {filter.filterOptions.quickFilters.map(
+                (
+                  quickFilter: {
+                    label: string
+                    params: Record<string, unknown>
+                  },
+                  index: number,
+                ) => (
+                  <WiseTableButton
+                    key={index}
+                    onClick={() => filter.applyQuickFilter(quickFilter.params)}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    {quickFilter.label}
+                  </WiseTableButton>
+                ),
+              )}
+            </div>
+          )}
+
+        {hasUnsavedChanges() && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-yellow-100 border border-yellow-300 rounded-md text-sm text-yellow-800 dark:bg-yellow-800/20 dark:border-yellow-800 dark:text-yellow-300">
+            <svg
+              className="w-4 h-4 text-yellow-600 dark:text-yellow-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
+            <span className="font-medium">You have unsaved changes</span>
+            <WiseTableButton
+              onClick={discardChanges}
+              size="sm"
+              variant="secondary"
+              className="ml-auto"
+            >
+              Discard Changes
+            </WiseTableButton>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+})
