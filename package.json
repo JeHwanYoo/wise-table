@@ -1,25 +1,27 @@
 {
-  "name": "wise-table",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "preview": "vite preview",
-    "prepare": "husky"
-  },
+  "name": "@jehwanyoo/wise-table",
+  "version": "0.0.3",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "dependencies": {
+    "@hookform/resolvers": "^5.2.1",
+    "@tanstack/react-query": "^5.85.5",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-hook-form": "^7.62.0",
+    "use-debounce": "^10.0.5",
+    "zod": "^4.1.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
+    "@faker-js/faker": "^9.9.0",
+    "@tailwindcss/vite": "^4.1.12",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
+    "chokidar-cli": "^3.0.0",
     "eslint": "^9.33.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
@@ -30,5 +32,32 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",
     "vite": "^7.1.2"
-  }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./styles.css": "./dist/index.css"
+  },
+  "engines": {
+    "bun": ">=1.2.20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:watch": "vite build --watch",
+    "types": "tsc -p tsconfig.types.json",
+    "types:watch": "tsc -p tsconfig.types.json --watch --preserveWatchOutput",
+    "lint:watch": "chokidar \"src/**/*.ts\" \"src/**/*.tsx\" \"example/**/*.ts\" \"example/**/*.tsx\" -c \"eslint .\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "dev:lib": "bunx concurrently \"bun run build:watch\" \"bun run types:watch\" \"bun run lint:watch\"",
+    "preview": "vite preview",
+    "prepare": "husky"
+  },
+  "sideEffects": false,
+  "type": "module",
+  "types": "./dist/index.d.ts"
 }
