@@ -1,15 +1,15 @@
-import React, { type ComponentType } from 'react'
+import React from 'react'
 import type { ZodType, infer as zInfer } from 'zod'
 
 import { useLoadingState } from '../hooks/useLoadingState'
 import { useURLState } from '../hooks/useURLState'
-import type { CRUDActions, FilterType, PagedData } from '../hooks/useWiseTable'
+import type { CRUDActions, PagedData } from '../hooks/useWiseTable'
 import {
   CRUDActionsProvider,
   EditingProvider,
   TableStoreProvider,
 } from '../providers'
-import type { ColumnType, CurrencyOptions, SelectOption } from '../types/common'
+import type { ColumnType, SelectOption } from '../types/common'
 import type { DefaultComponentProps } from '../types/ComponentInterfaces'
 import { ErrorState } from '../ui/ErrorState'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
@@ -22,17 +22,10 @@ import { TableHeader } from './TableHeader'
 // Generic type utility for Zod schema inference
 export type InferSchema<T extends ZodType> = zInfer<T>
 
-// Query result type for useSelectQuery
-export interface SelectQueryResult<T = unknown> {
-  data?: SelectOption<T>[]
-  isLoading?: boolean
-  error?: unknown
-  isError?: boolean
-}
-
-// Column value query result for pre-filling field values
+// Column value query result for pre-filling field values and options
 export interface ColumnValueQueryResult<T = unknown> {
   data?: T
+  options?: SelectOption<T>[]
   isLoading?: boolean
   error?: unknown
   isError?: boolean
@@ -45,35 +38,23 @@ export interface WiseTableColumn<
 > {
   key: K
   label: string
-  editable?: boolean
   readonly?: boolean
   width?: string | number
-  autoGenerate?: boolean
   /**
-   * Custom cell renderer. The third argument provides a wrapper that
-   * reproduces the library's default badge styling for option-based columns.
-   * For non-option columns, it will simply return the provided content or
-   * a basic formatted fallback when content is omitted.
+   * Custom cell renderer with improved signature
+   * @param value - The current cell value
+   * @param row - The current row data
+   * @param rows - All table rows data
+   * @param rowIndex - The current row index
    */
-  render?: (
-    value: T[K],
-    row: T,
-    originalWrapper: (
-      content?: React.ReactNode,
-      className?: string,
-    ) => React.ReactNode,
-    setValue?: (value: T[K]) => void,
-  ) => React.ReactNode
+  render?: (value: T[K], row: T, rows: T[], rowIndex: number) => React.ReactNode
   options?: SelectOption<T[K]>[]
-  useSelectQuery?: () => SelectQueryResult<T[K]>
   /**
    * Hook to fetch or compute an initial value for this column (e.g., server default).
    * Executed in both table cells and Create modal to pre-fill values.
    */
   useColumnQuery?: () => ColumnValueQueryResult<T[K]>
   type?: ColumnType
-  locale?: string
-  currencyOptions?: CurrencyOptions
   dateFormat?: string
 }
 
@@ -105,11 +86,6 @@ export interface ReasonRequirements {
   delete?: boolean
 }
 
-// Create default values for the schema
-export type CreateDefaultValues<TSchema extends ZodType> = Partial<
-  InferSchema<TSchema>
->
-
 // Core component props
 export interface WiseTableProps<
   S extends ZodType,
@@ -125,10 +101,7 @@ export interface WiseTableProps<
   createColumns?: WiseTableColumn<
     C extends ZodType ? InferSchema<C> : InferSchema<S>
   >[]
-  createDefaultValues?: CreateDefaultValues<S>
-  enableFilters?: boolean
   useSearch?: boolean
-  ActionsComponent?: ComponentType
   tableActions?: TableActionsProps
   crudActions?: CRUDActions<
     InferSchema<S>,
@@ -141,12 +114,7 @@ export interface WiseTableProps<
   filterOptions?: FilterOptions<unknown>
   defaultFilters?: FilterParams<unknown>
   requireReason?: ReasonRequirements
-
   componentProps?: DefaultComponentProps
-  onFilterChange?: (
-    filterParams: FilterParams<unknown>,
-    searchParams: URLSearchParams,
-  ) => void
 }
 
 function WiseTableCoreImpl<
@@ -157,12 +125,70 @@ function WiseTableCoreImpl<
   const urlState = useURLState()
   const loadingState = useLoadingState()
 
-  const queryFromActions = props.crudActions?.useQuery?.({
-    page: urlState.queryState.page,
-    limit: urlState.queryState.limit,
-    filters: urlState.queryState.filters as FilterType<S>,
-    search: urlState.queryState.search,
-  })
+  // Build query parameters with schema validation
+  const queryParams = React.useMemo(() => {
+    // Base parameters
+    const baseParams = {
+      page: urlState.queryState.page,
+      limit: urlState.queryState.limit,
+      search: urlState.queryState.search,
+    }
+
+    // If querySchema is provided, filter and validate against it
+    if (props.querySchema) {
+      try {
+        // Filter out empty values
+        const filteredParams: Record<string, unknown> = {}
+
+        Object.entries(urlState.queryState.filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            // Handle date arrays: convert [startDate, endDate] to comma-separated string
+            if (Array.isArray(value) && value.length > 0) {
+              const [startDate, endDate] = value
+              const validDates = [startDate, endDate].filter(
+                (date) => date !== null && date !== undefined && date !== '',
+              )
+              if (validDates.length > 0) {
+                // Join valid dates with comma for API
+                filteredParams[key] = validDates.join(',')
+              }
+            } else {
+              filteredParams[key] = value
+            }
+          }
+        })
+
+        // Validate the filtered params against the schema using safeParse
+        const parseResult = props.querySchema.safeParse(filteredParams)
+
+        if (!parseResult.success) {
+          throw new Error(
+            `Query schema validation failed: ${parseResult.error.message}`,
+          )
+        }
+
+        const validatedParams = parseResult.data
+
+        return {
+          ...baseParams,
+          ...(validatedParams as Record<string, unknown>),
+        }
+      } catch (error) {
+        // Re-throw the error to be handled by the query error boundary
+        throw new Error(
+          `Query schema validation failed: ${error instanceof Error ? error.message : String(error)}`,
+        )
+      }
+    }
+
+    // Fallback: if no querySchema, use all filters (current behavior)
+    return {
+      ...baseParams,
+      ...urlState.queryState.filters,
+    }
+  }, [urlState.queryState, props.querySchema])
+
+  const queryFromActions = props.crudActions?.useQuery?.(queryParams)
 
   const rawData = queryFromActions?.data as unknown
   const data =
@@ -191,8 +217,6 @@ function WiseTableCoreImpl<
 
   // Loading state management
 
-  const ActionsComponent =
-    props.ActionsComponent || (() => <TableActions {...props.tableActions} />)
   const crudActions = props.crudActions || {}
 
   // Default UI components for error and loading states
@@ -234,20 +258,19 @@ function WiseTableCoreImpl<
         createColumns={props.createColumns}
         schema={props.schema}
         createSchema={props.createSchema}
-        createDefaultValues={props.createDefaultValues}
         requireReason={props.requireReason}
       >
         <TableStoreProvider>
           <div className={`wise-table relative ${props.className || ''}`}>
             <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden dark:bg-gray-800 dark:border-gray-700">
-              {ActionsComponent && (
+              {props.tableActions && (
                 <div className="sticky top-0 z-30 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-800">
-                  <ActionsComponent />
+                  <TableActions {...props.tableActions} />
                 </div>
               )}
 
               <div
-                className={`sticky ${ActionsComponent ? 'top-[68px]' : 'top-0'} z-20 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-800`}
+                className={`sticky ${props.tableActions ? 'top-[68px]' : 'top-0'} z-20 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-800`}
               >
                 <FilterBar />
               </div>

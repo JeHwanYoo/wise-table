@@ -35,16 +35,16 @@ export function TableBody<T, TIdColumn extends keyof T>({
               data-row-id={String(rowId)}
               className={`transition-colors ${
                 isRowSelected
-                  ? 'bg-blue-50 hover:bg-blue-50 dark:bg-blue-800/30 dark:hover:bg-blue-800/40'
+                  ? 'bg-blue-50 hover:bg-blue-50 text-blue-800 dark:bg-blue-800/30 dark:hover:bg-blue-800/40 dark:text-blue-100'
                   : isRowDirty
-                    ? 'bg-amber-50 hover:bg-amber-50 dark:bg-amber-200/20 dark:hover:bg-amber-200/30 dark:text-gray-800'
+                    ? 'bg-amber-50 hover:bg-amber-50 text-amber-800 dark:bg-amber-700/20 dark:hover:bg-amber-700/30 dark:text-amber-100'
                     : 'hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               <td className="px-6 py-4 whitespace-nowrap border-b border-gray-200">
                 <input
                   type="checkbox"
-                  className="h-5 w-5 rounded border-gray-300 dark:border-gray-600"
+                  className="h-5 w-5 rounded border-gray-300 dark:border-gray-700"
                   checked={isRowSelected}
                   onChange={() => {
                     const newSelection = new Set(selectedRowIds)
@@ -65,6 +65,7 @@ export function TableBody<T, TIdColumn extends keyof T>({
                   rowIndex={rowIndex}
                   column={column}
                   value={row[column.key]}
+                  idColumn={idColumn}
                 />
               ))}
             </tr>
@@ -74,7 +75,7 @@ export function TableBody<T, TIdColumn extends keyof T>({
         <tr>
           <td
             colSpan={columns.length + 1}
-            className="px-6 py-12 text-center text-gray-500 dark:text-gray-400"
+            className="px-6 py-12 text-center text-gray-500 dark:text-gray-300"
           >
             <div className="text-4xl mb-2">📊</div>
             <div>No data available</div>

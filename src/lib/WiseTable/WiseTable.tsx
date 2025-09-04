@@ -36,7 +36,6 @@ export function WiseTable<
   C extends ZodType | undefined = undefined,
 >(props: WiseTableProps<S, D, C>) {
   const {
-    enableFilters = true,
     useSearch = true,
     filterOptions,
     defaultFilters,
@@ -54,8 +53,8 @@ export function WiseTable<
         <FilterProvider
           filterOptions={filterOptions as FilterOptions<unknown>}
           defaultFilters={defaultFilters}
-          enableFilters={enableFilters}
           useSearch={useSearch}
+          componentProps={componentProps}
         >
           <UIProvider
             tableHeight={tableHeight}
@@ -71,13 +70,11 @@ export function WiseTable<
                   }
                   schema={coreProps.schema}
                   createSchema={coreProps.createSchema}
-                  createDefaultValues={coreProps.createDefaultValues}
                   requireReason={coreProps.requireReason}
                   componentProps={componentProps}
                 >
                   <WiseTableCore
                     {...(coreProps as unknown as CoreProps<S, D, C>)}
-                    enableFilters={enableFilters}
                     useSearch={useSearch}
                     filterOptions={filterOptions}
                     tableHeight={tableHeight}

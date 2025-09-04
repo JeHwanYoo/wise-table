@@ -200,7 +200,7 @@ export function TableActions({
 
         {/* Right Content */}
         {rightContent || (
-          <div className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="text-xs text-gray-500 dark:text-gray-300">
             Wise Table
           </div>
         )}

@@ -78,7 +78,7 @@ Always prioritize reuse over recreation!
 After completing any component work, **ALWAYS** run quality checks:
 
 ```bash
-bun run lint && bun run build
+bun run lint && bun run build && bun run types
 ```
 
 This ensures:
@@ -86,13 +86,14 @@ This ensures:
 - ✅ Code quality and consistency (ESLint)
 - ✅ Type safety and compilation (TypeScript)
 - ✅ Build integrity and optimization (Vite)
+- ✅ Type checking validation
 
 **Never skip this step** - it prevents integration issues and maintains library quality standards.
 
 ## Commenting Guidelines
 
 - Focus comments on explaining the code itself (what/why), not conversational context or agent-style narration.
-- Avoid meta comments like “explaining to the user” or task orchestration; keep comments local to the implementation.
+- Avoid meta comments like "explaining to the user" or task orchestration; keep comments local to the implementation.
 - Prefer concise, actionable comments above complex logic; omit obvious comments.
 - Keep a single consistent voice and formatting across the codebase to ensure perceived single-author quality.
 
@@ -126,120 +127,3 @@ const memoizedResult = useMemo(() => computeComplexData(input), [input])
 - Prefer subtle contrast: light mode typically 50–200 for backgrounds, dark mode 700–800.
 - Exceptions: pure `white`/`black` with opacity utilities (e.g., `bg-black/10`) are allowed for overlays/backdrops only.
 - Keep selected/dirty row backgrounds consistent across light/dark modes within the allowed shade range.
-
-# WiseTable Library Component Guidelines
-
-## Component Reuse Policy
-
-Before creating any new components, **ALWAYS check and use existing components from this library first**.
-
-### Available Component Categories
-
-#### `/ui` - Library Common UI Components
-
-Shared UI building blocks used across the library.
-
-- `WiseTableButton`
-- `ConfirmModal`
-- `ErrorState`
-- `LoadingSpinner`
-- `SearchableSelect`
-- `SearchBox`
-
-#### `/internal` - Library Core Components
-
-Core components that power WiseTable; not directly exposed to end users.
-
-- `FilterBar`, `TableHeader`, `TableBody`, `TableFooter`, `EditableCell`, `WiseTableCore`
-- `TableActions` (ready-to-use actions bar; configured via props only)
-
-#### `/modals` - Ready-to-use Modals
-
-- `CreateModal`, `UpdateSelectedModal`, `DeleteSelectedModal`
-
-## Component Creation Rules
-
-1. **Use WiseTable as the primary entrypoint.** End users should import and use `WiseTable` only.
-2. **Prefer ready-to-use internals.** Provide high-level components (e.g., `TableActions`, modals) that are configurable via props.
-3. **Parameter injection over component injection.** Allow customization through labels, handlers, and useful options (e.g., button texts, onClick handlers), not by requiring users to re-implement components.
-4. **Check existing first.** Before creating new components, look for equivalents in `/ui`, `/internal`, or `/modals`.
-5. **Reuse UI components.** Build with `/ui` primitives to ensure consistency.
-6. **Respect boundaries.** Keep logic in `internal`, visuals in `ui`, and user-facing modals in `modals`.
-
-## Examples
-
-```tsx
-// ✅ Good - Using existing UI components
-import { WiseTableButton } from '../ui/WiseTableButton'
-import { LoadingSpinner } from '../ui/LoadingSpinner'
-
-// ✅ Good - Extending existing component
-import { ConfirmModal } from '../ui/ConfirmModal'
-// Then customize via props
-
-// ❌ Bad - Creating duplicate functionality
-// Don't create CustomButton when WiseTableButton exists
-// Don't create MySpinner when LoadingSpinner exists
-```
-
-## Directory Structure
-
-```
-src/lib/WiseTable/
-├── ui/         # 🔧 Common UI building blocks
-├── internal/   # ⚙️ Core components (not public)
-├── modals/     # 🧩 Ready-to-use modals
-├── hooks/      # 🪝 Custom hooks
-├── providers/  # 🏪 Context providers
-├── contexts/   # 📦 React contexts
-├── types/      # 📝 Type definitions
-└── utils/      # 🛠️ Utility functions
-```
-
-Always prioritize reuse over recreation!
-
-## Quality Assurance
-
-After completing any component work, **ALWAYS** run quality checks:
-
-```bash
-bun run lint && bun run build
-```
-
-This ensures:
-
-- ✅ Code quality and consistency (ESLint)
-- ✅ Type safety and compilation (TypeScript)
-- ✅ Build integrity and optimization (Vite)
-
-**Never skip this step** - it prevents integration issues and maintains library quality standards.
-
-## Commenting Guidelines
-
-- Focus comments on explaining the code itself (what/why), not conversational context or agent-style narration.
-- Avoid meta comments like “explaining to the user” or task orchestration; keep comments local to the implementation.
-- Prefer concise, actionable comments above complex logic; omit obvious comments.
-- Keep a single consistent voice and formatting across the codebase to ensure perceived single-author quality.
-
-Example of acceptable style:
-
-```ts
-// Calculate total price including tax and discounts
-const finalPrice = basePrice * (1 + taxRate) - discountAmount
-
-// Cache expensive computation result for performance
-const memoizedResult = useMemo(() => computeComplexData(input), [input])
-```
-
-## Lint Enforcement
-
-**Lint bypassing is strictly prohibited.** The following patterns must never be used:
-
-- `/* eslint-disable */`, `/* eslint-disable-line */`, `/* eslint-disable-next-line /`
-- `// @ts-ignore`, `// @ts-nocheck`, or any other static analysis suppression comments
-
-**Resolution Strategy:**
-
-- When lint errors occur, fix the code to satisfy the rules instead of disabling them
-- For third-party library type/lint issues, resolve through proper solutions (wrappers, explicit type declarations, etc.) rather than rule suppression
-- Maintain code quality by addressing root causes, not symptoms

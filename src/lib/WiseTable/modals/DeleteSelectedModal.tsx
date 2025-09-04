@@ -60,7 +60,7 @@ export function DeleteSelectedModal<T>({
             <h3 className="text-lg font-medium text-red-800 dark:text-red-300">
               Confirm Deletion
             </h3>
-            <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+            <p className="text-sm text-gray-500 mt-1 dark:text-gray-300">
               {selectedItems.length} item{selectedItems.length !== 1 ? 's' : ''}{' '}
               selected for deletion.
             </p>
@@ -69,7 +69,7 @@ export function DeleteSelectedModal<T>({
           {/* Content */}
           <div className="px-6 py-4 overflow-y-auto max-h-[80vh]">
             {/* Warning Message */}
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg dark:bg-red-800/20 dark:border-red-800">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg dark:bg-red-700/20 dark:border-red-600">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
                   <svg
@@ -108,7 +108,7 @@ export function DeleteSelectedModal<T>({
                 {selectedItems.slice(0, 10).map((item, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded dark:bg-red-800/20 dark:border-red-800"
+                    className="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded dark:bg-red-700/20 dark:border-red-600"
                   >
                     <span className="text-sm font-medium text-red-800 dark:text-red-300">
                       {idColumn ? (
@@ -143,7 +143,7 @@ export function DeleteSelectedModal<T>({
                   </div>
                 ))}
                 {selectedItems.length > 10 && (
-                  <div className="text-xs text-gray-500 text-center py-2 dark:text-gray-400">
+                  <div className="text-xs text-gray-500 text-center py-2 dark:text-gray-300">
                     ... and {selectedItems.length - 10} more items
                   </div>
                 )}

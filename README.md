@@ -2,15 +2,15 @@
 
 **A powerful React table library designed for modern data-driven applications**
 
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/yujehwan/wise-table/blob/main/LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/JeHwanYoo/wise-table/blob/main/LICENSE)
 [![React](https://img.shields.io/badge/React-18%2B%7C19%2B-61DAFB?logo=react)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![TanStack Query](https://img.shields.io/badge/TanStack%20Query-5%2B-FF4154?logo=react-query)](https://tanstack.com/query/latest)
 [![Zod](https://img.shields.io/badge/Zod-3%2B%7C4%2B-3E67B1?logo=zod)](https://zod.dev/)
 [![Bun](https://img.shields.io/badge/Bun-1.2%2B-blue)](https://bun.sh/)
 
-> **🚧 Work in Progress (WIP)**  
-> This library is currently under active development. APIs may change and features may be incomplete. Use with caution in production environments.
+> **🚧 Beta Release - Use with Caution**  
+> This project is a component library developed for implementing the back-office system of [Wisely Company](https://shop.wisely.store/). As it is currently in beta version, it may not be suitable for public use yet. Comprehensive and finalized documentation will be available with version 1.0.0.
 
 Wise Table is a high-performance React table library designed for modern web applications. Built with both user experience and developer convenience in mind, featuring **React Query integration** and **Zod schema validation**.
 
@@ -69,28 +69,23 @@ Wise Table is a high-performance React table library designed for modern web app
 
 ### For Library Users
 
-> **📝 TODO**: Package will be published to npm after stable release.
-
-**Required Peer Dependencies**
+**Installation**
 
 ```bash
-npm install @tanstack/react-query zod react react-dom
+npm install @jehwanyoo2/wise-table
 # or
-yarn add @tanstack/react-query zod react react-dom
+yarn add @jehwanyoo2/wise-table
 # or
-pnpm add @tanstack/react-query zod react react-dom
+pnpm add @jehwanyoo2/wise-table
 # or
-bun add @tanstack/react-query zod react react-dom
+bun add @jehwanyoo2/wise-table
 ```
-
-> **💡 Why Peer Dependencies?**  
-> Wise Table uses peer dependencies to avoid version conflicts and give you full control over your data management stack. This ensures compatibility with your existing React Query setup.
 
 ### For Development
 
 ```bash
 # Clone the repository
-git clone https://github.com/yujehwan/wise-table.git
+git clone https://github.com/JeHwanYoo/wise-table.git
 cd wise-table
 
 # Install dependencies with Bun

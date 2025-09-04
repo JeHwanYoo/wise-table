@@ -1,3 +1,8 @@
+import { useState } from 'react'
+import { useEditingContext } from '../hooks/useWiseTable'
+import { WiseTableButton } from '../ui'
+import { SearchableSelect } from '../ui/SearchableSelect'
+
 export interface TableFooterProps<T> {
   data: T[] | undefined
   pagination?: {
@@ -12,10 +17,6 @@ export interface TableFooterProps<T> {
   onPageChange?: (page: number) => void
 }
 
-import { useEditingContext } from '../hooks/useWiseTable'
-import { WiseTableButton } from '../ui'
-import { SearchableSelect } from '../ui/SearchableSelect'
-
 export function TableFooter<T>({
   data,
   pagination,
@@ -26,6 +27,42 @@ export function TableFooter<T>({
 }: TableFooterProps<T>) {
   const { hasUnsavedChanges } = useEditingContext()
   const isDirtyState = hasUnsavedChanges()
+  const [pageInput, setPageInput] = useState('')
+
+  const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // Only allow numbers
+    if (value === '' || /^\d+$/.test(value)) {
+      setPageInput(value)
+    }
+  }
+
+  const handlePageInputSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!pagination || !pageInput) return
+
+    const pageNum = parseInt(pageInput, 10)
+    if (pageNum >= 1 && pageNum <= pagination.totalPages) {
+      onPageChange?.(pageNum)
+      setPageInput('')
+    }
+  }
+
+  const handlePageInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (!pagination || !pageInput) return
+
+      const pageNum = parseInt(pageInput, 10)
+      if (pageNum >= 1 && pageNum <= pagination.totalPages) {
+        onPageChange?.(pageNum)
+        setPageInput('')
+      }
+    } else if (e.key === 'Escape') {
+      setPageInput('')
+    }
+  }
+
   const pageItems = (() => {
     if (!pagination) return [1]
     const totalPages = pagination.totalPages
@@ -72,7 +109,7 @@ export function TableFooter<T>({
     <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 dark:bg-gray-800 dark:border-gray-800">
       <div className="grid grid-cols-12 items-center">
         {/* Left: Row count */}
-        <div className="col-span-3 text-sm text-gray-500 dark:text-gray-400 flex gap-2">
+        <div className="col-span-3 text-sm text-gray-500 dark:text-gray-300 flex gap-2">
           <span>
             {pagination
               ? `${pagination.total} records`
@@ -108,7 +145,7 @@ export function TableFooter<T>({
               item === '…' ? (
                 <span
                   key={`ellipsis-${idx}`}
-                  className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400"
+                  className="px-2 py-1 text-sm text-gray-500 dark:text-gray-300"
                 >
                   …
                 </span>
@@ -154,8 +191,35 @@ export function TableFooter<T>({
           </WiseTableButton>
         </div>
 
-        {/* Right: Page size selector */}
-        <div className="col-span-3 flex justify-end">
+        {/* Right: Page input and page size selector */}
+        <div className="col-span-3 flex justify-end items-center gap-3">
+          {/* Page input */}
+          {pagination && (
+            <form
+              onSubmit={handlePageInputSubmit}
+              className="flex items-center gap-2"
+            >
+              <span className="text-sm text-gray-500 dark:text-gray-300">
+                Go to:
+              </span>
+              <input
+                type="text"
+                value={pageInput}
+                onChange={handlePageInputChange}
+                onKeyDown={handlePageInputKeyDown}
+                placeholder={pagination.page.toString()}
+                disabled={isDirtyState}
+                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed bg-white text-gray-800 placeholder-gray-400 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
+                title={
+                  isDirtyState
+                    ? 'Save changes before navigation'
+                    : `Enter page number (1-${pagination.totalPages})`
+                }
+              />
+            </form>
+          )}
+
+          {/* Page size selector */}
           <SearchableSelect
             options={[
               { value: 10, label: '10 per page' },

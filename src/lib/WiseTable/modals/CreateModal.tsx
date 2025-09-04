@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ZodType } from 'zod'
+import { RenderContext } from '../contexts/RenderContext'
 import type { WiseTableColumn } from '../index'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import {
@@ -12,7 +13,6 @@ interface CreateModalProps<T, TSchema extends ZodType> {
   isOpen: boolean
   columns: WiseTableColumn<T>[]
   schema: TSchema
-  defaultValues?: Partial<T>
   onConfirm: (items: T[]) => void
   onCancel: () => void
   idColumn?: keyof T
@@ -28,7 +28,6 @@ export function CreateModal<T, TSchema extends ZodType>({
   isOpen,
   columns,
   schema,
-  defaultValues = {},
   onConfirm,
   onCancel,
   idColumn,
@@ -36,7 +35,7 @@ export function CreateModal<T, TSchema extends ZodType>({
   const [formItems, setFormItems] = useState<FormItem<T>[]>([
     {
       id: crypto.randomUUID(),
-      data: { ...defaultValues },
+      data: {},
       errors: {} as Record<keyof T, string>,
     },
   ])
@@ -52,8 +51,8 @@ export function CreateModal<T, TSchema extends ZodType>({
   >()
 
   columns.forEach((column) => {
-    const queryResult = column.useSelectQuery?.()
-    const originalOptions = queryResult?.data ?? column.options ?? []
+    const queryResult = column.useColumnQuery?.()
+    const originalOptions = queryResult?.options ?? column.options ?? []
     const isLoading = queryResult?.isLoading ?? false
     const hasError = queryResult?.isError ?? false
 
@@ -71,16 +70,12 @@ export function CreateModal<T, TSchema extends ZodType>({
   // Collect column value results via hooks (stable order)
   const columnValueResults = columns.map((column) => column.useColumnQuery?.())
 
-  // Build default row data using provided defaultValues plus useColumnQuery results
+  // Build default row data using useColumnQuery results
   const buildDefaultRowData = (): Partial<T> => {
-    const next = { ...defaultValues } as Partial<T>
+    const next = {} as Partial<T>
     columns.forEach((column, idx) => {
       const res = columnValueResults[idx]
-      if (
-        res &&
-        res.data !== undefined &&
-        (next as Record<string, unknown>)[column.key as string] === undefined
-      ) {
+      if (res && res.data !== undefined) {
         ;(next as Record<string, unknown>)[column.key as string] =
           res.data as unknown
       }
@@ -134,10 +129,9 @@ export function CreateModal<T, TSchema extends ZodType>({
 
   const editableColumns = columns.filter((col) => {
     const isHidden = col.type === 'hidden'
-    const notEditable = col.editable === false
-    const isAuto = col.autoGenerate === true
+    const isReadonly = col.readonly === true
     const isIdField = idColumn ? col.key === idColumn : false
-    return !(isHidden || notEditable || isAuto || isIdField)
+    return !(isHidden || isReadonly || isIdField)
   })
 
   const addNewItem = () => {
@@ -278,7 +272,7 @@ export function CreateModal<T, TSchema extends ZodType>({
                 + Add New Row
               </WiseTableButton>
             </div>
-            <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+            <p className="text-sm text-gray-500 mt-1 dark:text-gray-300">
               Creating {formItems.length} item
               {formItems.length !== 1 ? 's' : ''}
               {hasInteracted && totalErrors > 0 && (
@@ -320,11 +314,11 @@ export function CreateModal<T, TSchema extends ZodType>({
                         key={item.id}
                         className={
                           hasInteracted && hasRowErrors
-                            ? 'bg-red-100 dark:bg-red-800/30'
+                            ? 'bg-red-100 text-red-800 dark:bg-red-700/30 dark:text-red-100'
                             : ''
                         }
                       >
-                        <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap ">
+                        <td className="px-3 py-2 text-xs text-gray-500 dark:text-gray-300 whitespace-nowrap ">
                           {idx + 1}
                         </td>
                         {editableColumns.map((column) => (
@@ -389,24 +383,33 @@ export function CreateModal<T, TSchema extends ZodType>({
 
                               // Custom render for CreateModal editing cell (overrides defaults)
                               if (column.render) {
-                                const wrapper = (
-                                  content?: React.ReactNode,
-                                  className?: string,
-                                ) => {
-                                  const c = content ?? null
-                                  return className ? (
-                                    <span className={className}>{c}</span>
-                                  ) : (
-                                    c
-                                  )
+                                const allItemsData = formItems.map(
+                                  (formItem) => formItem.data as T,
+                                )
+                                const renderContextValue = {
+                                  rowId: item.id,
+                                  columnKey: column.key,
+                                  originalRow: (item.data as T) ?? ({} as T),
+                                  rowIndex: idx,
+                                  updateFunction: (value: unknown) =>
+                                    updateItemField(
+                                      item.id,
+                                      column.key,
+                                      value as T[keyof T],
+                                    ),
                                 }
-                                const setValue = (next: T[keyof T]) =>
-                                  updateItemField(item.id, column.key, next)
-                                const custom = column.render(
-                                  value as T[keyof T],
-                                  (item.data as T) ?? ({} as T),
-                                  wrapper,
-                                  setValue,
+
+                                const custom = (
+                                  <RenderContext.Provider
+                                    value={renderContextValue}
+                                  >
+                                    {column.render(
+                                      value as T[keyof T],
+                                      (item.data as T) ?? ({} as T),
+                                      allItemsData,
+                                      idx,
+                                    )}
+                                  </RenderContext.Provider>
                                 )
                                 if (custom !== undefined && custom !== null) {
                                   return <>{custom}</>
@@ -451,21 +454,17 @@ export function CreateModal<T, TSchema extends ZodType>({
                                       renderOption={
                                         column.render
                                           ? (opt) => {
-                                              const setValue = (
-                                                next: T[keyof T],
-                                              ) =>
-                                                updateItemField(
-                                                  item.id,
-                                                  column.key,
-                                                  next,
+                                              const allItemsData =
+                                                formItems.map(
+                                                  (formItem) =>
+                                                    formItem.data as T,
                                                 )
                                               return (
                                                 column.render?.(
                                                   opt.value as T[keyof T],
                                                   (item.data as T) ?? ({} as T),
-                                                  (content?: React.ReactNode) =>
-                                                    content ?? null,
-                                                  setValue,
+                                                  allItemsData,
+                                                  idx,
                                                 ) ?? opt.label
                                               )
                                             }
@@ -509,8 +508,7 @@ export function CreateModal<T, TSchema extends ZodType>({
                                 )
                               }
                               const inputType =
-                                column.type === 'number' ||
-                                column.type === 'currency'
+                                column.type === 'number'
                                   ? 'number'
                                   : column.type === 'date'
                                     ? 'date'
@@ -522,10 +520,7 @@ export function CreateModal<T, TSchema extends ZodType>({
                                     value={String(value || '')}
                                     onChange={(e) => {
                                       let convertedValue: T[keyof T]
-                                      if (
-                                        column.type === 'number' ||
-                                        column.type === 'currency'
-                                      ) {
+                                      if (column.type === 'number') {
                                         const inputValue = e.target.value.trim()
                                         if (inputValue === '') {
                                           convertedValue =
@@ -593,7 +588,7 @@ export function CreateModal<T, TSchema extends ZodType>({
                   </span>
                 )}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="text-xs text-gray-500 dark:text-gray-300">
                 {hasInteracted && totalErrors > 0 ? (
                   <span className="text-red-500">
                     ❌ Fix validation errors to continue

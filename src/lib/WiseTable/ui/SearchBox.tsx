@@ -67,7 +67,7 @@ export function SearchBox({
   return (
     <div className={`relative ${className || ''}`}>
       {/* Icon */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 dark:text-gray-500">
+      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 dark:text-gray-300">
         <SearchIcon />
       </div>
 
@@ -77,7 +77,7 @@ export function SearchBox({
         value={inputValue}
         onChange={handleChange}
         placeholder={placeholder}
-        className="w-full max-w-sm pl-9 pr-9 py-2 text-sm bg-white border border-gray-300 rounded-md placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500"
+        className="w-full max-w-sm pl-9 pr-9 py-2 text-gray-800 text-sm bg-white border border-gray-300 rounded-md placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500"
       />
 
       {/* Clear button */}
@@ -85,7 +85,7 @@ export function SearchBox({
         <button
           type="button"
           onClick={handleClear}
-          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+          className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-200"
           aria-label="Clear search"
         >
           <CloseIcon size="sm" />

@@ -90,6 +90,9 @@ export interface CRUDActions<
 
 // Editing context interface
 export interface EditingContextValue<T = unknown> {
+  // Table data
+  data: T[]
+
   // Current cell being edited
   currentEdit: EditingState<T> | null
   setCurrentEdit: (edit: EditingState<T> | null) => void
@@ -178,6 +181,9 @@ export function useEditingContext<T = unknown>(): EditingContextValue<T> {
 
 // Unified hook interface combining all WiseTable functionality
 export interface WiseTableHook<T = unknown> {
+  // Table data
+  data: T[]
+
   // CRUD Operations - Modal-based
   onCreateModal?: () => void // Opens create modal
   onUpdateSelected?: () => void // Opens update modal
@@ -237,6 +243,9 @@ export function useWiseTable<T = unknown>(): WiseTableHook<T> {
   }
 
   return {
+    // Table data
+    data: editingContext.data,
+
     // CRUD Operations - Modal-based
     onCreateModal,
     onUpdateSelected,

@@ -26,7 +26,7 @@ export const WiseTableButton = forwardRef<
     ref,
   ) => {
     const baseClasses =
-      'inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer disabled:cursor-not-allowed hover:scale-105 disabled:hover:scale-100 active:scale-95'
+      'inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer disabled:cursor-not-allowed hover:scale-105 disabled:hover:scale-100 active:scale-95'
 
     const variantClasses = {
       primary:

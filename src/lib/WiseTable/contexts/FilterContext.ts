@@ -24,6 +24,7 @@ export interface FilterContextValue {
   filterOptions: FilterOptions<unknown>
   currentFilters: Record<string, unknown>
   searchValue: string
+  searchPlaceholder: string
   updateFilter: (key: string, value: unknown) => void
   removeFilter: (key: string) => void
   clearAllFilters: () => void

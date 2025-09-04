@@ -41,37 +41,19 @@ export const FilterBar = React.memo(function FilterBar({
         key: string
         type: 'string' | 'number' | 'date' | 'boolean' | 'select'
         label: string
-      }) =>
-        f.key === key ||
-        key.startsWith(`start_${f.key}`) ||
-        key.startsWith(`end_${f.key}`),
+      }) => f.key === key,
     )
     if (!field) return
 
-    if (key.startsWith('start_') || key.startsWith('end_')) {
-      const fieldKey = key.replace(/^start_|^end_/, '')
-      const fieldObj = filter.filterOptions.fields.find(
-        (f: {
-          key: string
-          type: 'string' | 'number' | 'date' | 'boolean' | 'select'
-          label: string
-        }) => f.key === fieldKey,
-      )
-      if (fieldObj?.type === 'date') {
-        const existing = activeFilters.find((af) => af.key === fieldKey)
-        if (existing && existing.type === 'date') {
-          if (key.startsWith('start_')) existing.start = String(value)
-          if (key.startsWith('end_')) existing.end = String(value)
-        } else {
-          activeFilters.push({
-            key: fieldKey,
-            label: fieldObj.label,
-            type: 'date',
-            start: key.startsWith('start_') ? String(value) : '',
-            end: key.startsWith('end_') ? String(value) : '',
-          })
-        }
-      }
+    if (field.type === 'date' && Array.isArray(value)) {
+      // Handle date array: [startDate, endDate]
+      activeFilters.push({
+        key,
+        label: field.label,
+        type: 'date',
+        start: value[0] || '',
+        end: value[1] || '',
+      })
     } else if (field.type === 'boolean') {
       activeFilters.push({
         key,
@@ -98,8 +80,12 @@ export const FilterBar = React.memo(function FilterBar({
     if (field.type === 'boolean') {
       filter.updateFilter(selectedKey, boolValue)
     } else if (field.type === 'date') {
-      if (dateStart) filter.updateFilter(`start_${selectedKey}`, dateStart)
-      if (dateEnd) filter.updateFilter(`end_${selectedKey}`, dateEnd)
+      // Store date as array: always [startDate, endDate] format
+      const dateRange = [dateStart || '', dateEnd || '']
+      // Only update if at least one date is provided
+      if (dateRange.some((date) => date !== '')) {
+        filter.updateFilter(selectedKey, dateRange)
+      }
     } else {
       if (value.trim()) filter.updateFilter(selectedKey, value.trim())
     }
@@ -119,12 +105,8 @@ export const FilterBar = React.memo(function FilterBar({
   }
 
   const removeFilter = (filterToRemove: ActiveFilter) => {
-    if (filterToRemove.type === 'date') {
-      filter.removeFilter(`start_${filterToRemove.key}`)
-      filter.removeFilter(`end_${filterToRemove.key}`)
-    } else {
-      filter.removeFilter(filterToRemove.key)
-    }
+    // For all filter types including date arrays, just remove the key
+    filter.removeFilter(filterToRemove.key)
   }
 
   const getDisplayValue = (activeFilter: ActiveFilter): string => {
@@ -136,6 +118,23 @@ export const FilterBar = React.memo(function FilterBar({
       if (activeFilter.start) parts.push(`From: ${activeFilter.start}`)
       if (activeFilter.end) parts.push(`To: ${activeFilter.end}`)
       return parts.join(', ')
+    }
+    if (activeFilter.type === 'select') {
+      // Find the corresponding field to get options
+      const field = filter.filterOptions.fields.find(
+        (f: {
+          key: string
+          type: string
+          options?: { label: string; value: string | number | boolean }[]
+        }) => f.key === activeFilter.key,
+      )
+      if (field?.options) {
+        const option = field.options.find(
+          (opt: { label: string; value: string | number | boolean }) =>
+            String(opt.value) === String(activeFilter.value),
+        )
+        return option?.label || String(activeFilter.value || '')
+      }
     }
     return activeFilter.value || ''
   }
@@ -153,7 +152,7 @@ export const FilterBar = React.memo(function FilterBar({
           <select
             value={boolValue ? 'true' : 'false'}
             onChange={(e) => setBoolValue(e.target.value === 'true')}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
           >
             <option value="true">True</option>
             <option value="false">False</option>
@@ -165,7 +164,7 @@ export const FilterBar = React.memo(function FilterBar({
           <select
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
           >
             <option value="">Select...</option>
             {selectedField.options?.map(
@@ -186,14 +185,14 @@ export const FilterBar = React.memo(function FilterBar({
               value={dateStart}
               onChange={(e) => setDateStart(e.target.value)}
               placeholder="From"
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
             />
             <input
               type="date"
               value={dateEnd}
               onChange={(e) => setDateEnd(e.target.value)}
               placeholder="To"
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
             />
           </div>
         )
@@ -206,7 +205,7 @@ export const FilterBar = React.memo(function FilterBar({
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={selectedField.placeholder || 'Enter number...'}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
           />
         )
 
@@ -218,7 +217,7 @@ export const FilterBar = React.memo(function FilterBar({
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={selectedField.placeholder || 'Enter value...'}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
           />
         )
     }
@@ -234,7 +233,7 @@ export const FilterBar = React.memo(function FilterBar({
             <SearchBox
               value={filter.searchValue}
               onChange={filter.updateSearch}
-              placeholder="Type to search..."
+              placeholder={filter.searchPlaceholder}
               className="flex-1 min-w-64"
             />
           )}
@@ -244,7 +243,7 @@ export const FilterBar = React.memo(function FilterBar({
               <select
                 value={selectedKey}
                 onChange={(e) => setSelectedKey(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-32 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-32 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
               >
                 <option value="">Select field...</option>
                 {filter.filterOptions.fields.map(
@@ -282,7 +281,7 @@ export const FilterBar = React.memo(function FilterBar({
             {activeFilters.map((activeFilter, index) => (
               <div
                 key={`${activeFilter.key}-${index}`}
-                className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm dark:bg-blue-800/30 dark:text-blue-200"
+                className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm dark:bg-blue-700/30 dark:text-blue-200"
               >
                 <span className="font-medium">{activeFilter.label}:</span>
                 <span className="ml-1">{getDisplayValue(activeFilter)}</span>
@@ -303,7 +302,7 @@ export const FilterBar = React.memo(function FilterBar({
         {filter.filterOptions.enableQuickFilters &&
           filter.filterOptions.quickFilters && (
             <div className="flex flex-wrap gap-2">
-              <span className="text-sm text-gray-600 self-center dark:text-gray-400">
+              <span className="text-sm text-gray-600 self-center dark:text-gray-300">
                 Quick filters:
               </span>
               {filter.filterOptions.quickFilters.map(
@@ -328,7 +327,7 @@ export const FilterBar = React.memo(function FilterBar({
           )}
 
         {hasUnsavedChanges() && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-yellow-100 border border-yellow-300 rounded-md text-sm text-yellow-800 dark:bg-yellow-800/20 dark:border-yellow-800 dark:text-yellow-300">
+          <div className="flex items-center gap-2 px-3 py-2 bg-yellow-100 border border-yellow-300 rounded-md text-sm text-yellow-800 dark:bg-yellow-700/20 dark:border-yellow-600 dark:text-yellow-300">
             <svg
               className="w-4 h-4 text-yellow-600 dark:text-yellow-400"
               fill="none"

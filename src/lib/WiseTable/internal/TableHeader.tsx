@@ -38,7 +38,7 @@ export function TableHeader<T>({ columns }: TableHeaderProps<T>) {
         <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-6 pt-6 pb-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
           <input
             type="checkbox"
-            className="h-5 w-5 rounded border-gray-300 dark:border-gray-600"
+            className="h-5 w-5 rounded border-gray-300 dark:border-gray-700"
             aria-label="Select all rows"
             onChange={handleToggleAll}
           />

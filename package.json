@@ -1,8 +1,40 @@
 {
-  "name": "@jehwanyoo/wise-table",
-  "version": "0.0.3",
+  "name": "@jehwanyoo2/wise-table",
+  "version": "0.0.5",
+  "description": "A powerful React table library designed for modern data-driven applications",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
+  "author": {
+    "name": "Je-hwan Yoo",
+    "url": "https://github.com/JeHwanYoo"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JeHwanYoo/wise-table.git"
+  },
+  "homepage": "https://github.com/JeHwanYoo/wise-table#readme",
+  "bugs": {
+    "url": "https://github.com/JeHwanYoo/wise-table/issues"
+  },
+  "keywords": [
+    "react",
+    "table",
+    "data-table",
+    "react-query",
+    "tanstack-query",
+    "zod",
+    "typescript",
+    "crud",
+    "filtering",
+    "pagination",
+    "editable",
+    "modal",
+    "schema-validation"
+  ],
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
     "@tanstack/react-query": "^5.85.5",

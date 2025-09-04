@@ -36,6 +36,7 @@ export {
 } from './WiseTable/ui'
 
 // Main hook and types
+export { useSetColumn } from './WiseTable/hooks/useSetColumn'
 export {
   useCRUDActions,
   useEditingContext,
@@ -51,11 +52,7 @@ export type {
   UpdateItemsPayload,
   WiseTableHook,
 } from './WiseTable/hooks/useWiseTable'
-export type {
-  ColumnType,
-  CurrencyOptions,
-  SelectOption,
-} from './WiseTable/types/common'
+export type { ColumnType, SelectOption } from './WiseTable/types/common'
 export type { DefaultComponentProps } from './WiseTable/types/ComponentInterfaces'
 
 // Utility functions

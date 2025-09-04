@@ -67,7 +67,7 @@ export function UpdateSelectedModal<T>({
             <h3 className="text-lg font-medium text-gray-800 dark:text-gray-100">
               Update Dirty Items
             </h3>
-            <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
+            <p className="text-sm text-gray-500 mt-1 dark:text-gray-300">
               {dirtyRows.length} dirty row{dirtyRows.length !== 1 ? 's' : ''}{' '}
               will be updated.
             </p>
@@ -86,7 +86,7 @@ export function UpdateSelectedModal<T>({
                   {validationErrors.map((error, index) => (
                     <div
                       key={index}
-                      className="border border-red-200 rounded-lg p-3 bg-red-50 dark:border-red-800 dark:bg-red-800/20"
+                      className="border border-red-200 rounded-lg p-3 bg-red-50 dark:border-red-600 dark:bg-red-700/20"
                     >
                       <div className="text-sm font-medium text-red-800 mb-2 dark:text-red-300">
                         ID: {formatCellValue(error.itemId)}
@@ -118,9 +118,9 @@ export function UpdateSelectedModal<T>({
                   {dirtyRows.map((dirtyRow, index) => (
                     <div
                       key={index}
-                      className="border border-orange-200 rounded-lg p-3 bg-orange-50 dark:border-orange-800 dark:bg-orange-200/20"
+                      className="border border-orange-200 rounded-lg p-3 bg-orange-50 dark:border-orange-600 dark:bg-orange-700/20"
                     >
-                      <div className="text-sm font-medium text-gray-800 mb-2 dark:text-gray-800">
+                      <div className="text-sm font-medium text-gray-800 mb-2 dark:text-gray-100">
                         {idColumn ? (
                           <>
                             ID:{' '}
@@ -134,7 +134,7 @@ export function UpdateSelectedModal<T>({
                         {dirtyRow.changedFields.map((field) => (
                           <div
                             key={String(field)}
-                            className="text-xs text-gray-600 dark:text-gray-700"
+                            className="text-xs text-gray-600 dark:text-gray-300"
                           >
                             <span className="font-medium">
                               {String(field)}:
@@ -156,10 +156,10 @@ export function UpdateSelectedModal<T>({
             ) : (
               <div className="mb-6 text-center py-8">
                 <div className="text-4xl mb-2">📋</div>
-                <div className="text-gray-500 dark:text-gray-400">
+                <div className="text-gray-500 dark:text-gray-300">
                   No unsaved changes found
                 </div>
-                <div className="text-sm text-gray-400 mt-1 dark:text-gray-500">
+                <div className="text-sm text-gray-400 mt-1 dark:text-gray-300">
                   This will update the selected items as-is
                 </div>
               </div>
@@ -198,7 +198,7 @@ export function UpdateSelectedModal<T>({
                   </span>
                 )}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="text-xs text-gray-500 dark:text-gray-300">
                 {hasValidationErrors ? (
                   <span className="text-red-500">
                     ❌ Fix validation errors to continue

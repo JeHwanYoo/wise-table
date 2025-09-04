@@ -1,15 +1,9 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { RenderContext } from '../contexts/RenderContext'
 import { useEditingContext } from '../hooks/useWiseTable'
 import type { WiseTableColumn } from '../index'
 import { SearchableSelect } from '../ui/SearchableSelect'
 import { getBadgeColor, getBadgeColorFrom } from '../utils/badgeColors'
-import { cn } from '../utils/cn'
-import {
-  formatCurrency,
-  formatCurrencyForEditing,
-  isValidCurrencyInput,
-  parseCurrencyInput,
-} from '../utils/currencyUtils'
 import {
   formatDate,
   formatDateForEditing,
@@ -24,6 +18,7 @@ interface EditableCellProps<T> {
   rowIndex: number
   column: WiseTableColumn<T>
   value: T[keyof T]
+  idColumn: keyof T
 }
 
 export function EditableCell<T>({
@@ -32,8 +27,10 @@ export function EditableCell<T>({
   rowIndex,
   column,
   value,
+  idColumn,
 }: EditableCellProps<T>) {
   const {
+    data,
     currentEdit,
     setCurrentEdit,
     startEdit,
@@ -45,8 +42,8 @@ export function EditableCell<T>({
   const [inputValue, setInputValue] = useState<string>('')
   const inputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const queryResult = column.useSelectQuery?.()
-  const availableOptions = queryResult?.data ?? column.options ?? []
+  const queryResult = column.useColumnQuery?.()
+  const availableOptions = queryResult?.options ?? column.options ?? []
   const isOptionsLoading = queryResult?.isLoading ?? false
   const hasOptionsError = queryResult?.isError ?? false
 
@@ -85,13 +82,7 @@ export function EditableCell<T>({
         currentEdit?.oldValue ??
         currentCellValue) as unknown
 
-      if (column.type === 'currency') {
-        setInputValue(
-          typeof base === 'number'
-            ? formatCurrencyForEditing(base)
-            : formatCurrencyForEditing(Number(base ?? 0)),
-        )
-      } else if (column.type === 'date') {
+      if (column.type === 'date') {
         setInputValue(
           formatDateForEditing(
             base as string | Date | null | undefined,
@@ -113,9 +104,8 @@ export function EditableCell<T>({
   ])
 
   const handleCellClick = () => {
-    const isIdLike = column.key === ('id' as keyof typeof row)
-    const canEdit =
-      column.readonly !== true && column.editable !== false && !isIdLike
+    const isIdColumn = column.key === idColumn
+    const canEdit = column.readonly !== true && !isIdColumn
     if (!canEdit || isEditing) return
 
     startEdit(rowIndex, column.key, currentCellValue)
@@ -134,24 +124,27 @@ export function EditableCell<T>({
 
   const handleCommit = () => {
     if (!isEditing) return
-    const isIdLike = column.key === ('id' as keyof typeof row)
-    if (column.readonly === true || column.editable === false || isIdLike) {
+    const isIdColumn = column.key === idColumn
+    if (column.readonly === true || isIdColumn) {
       setCurrentEdit(null)
       return
     }
 
     let newValue: T[keyof T]
 
-    if (column.type === 'currency') {
-      const numValue = parseCurrencyInput(inputValue)
-      newValue = numValue as T[keyof T]
-    } else if (column.type === 'date') {
-      const dateValue = parseDateInput(inputValue, column.dateFormat)
-      if (dateValue) {
-        // Store as Date object to satisfy z.date() schema; equality handled by normalize()
-        newValue = dateValue as T[keyof T]
+    if (column.type === 'date') {
+      if (inputValue.trim() === '') {
+        // For empty date input, use null for nullable schema compatibility
+        newValue = null as T[keyof T]
       } else {
-        newValue = inputValue as T[keyof T]
+        const dateValue = parseDateInput(inputValue, column.dateFormat)
+        if (dateValue) {
+          // Store as Date object to satisfy z.date() schema; equality handled by normalize()
+          newValue = dateValue as T[keyof T]
+        } else {
+          // Invalid date format, keep original value
+          newValue = value
+        }
       }
     } else if (typeof value === 'number') {
       const numValue = parseFloat(inputValue)
@@ -159,7 +152,8 @@ export function EditableCell<T>({
     } else if (typeof value === 'boolean') {
       newValue = (inputValue === 'true') as T[keyof T]
     } else {
-      newValue = inputValue as T[keyof T]
+      // For string fields, convert empty string to null for nullable schema compatibility
+      newValue = (inputValue.trim() === '' ? null : inputValue) as T[keyof T]
     }
 
     commitEdit(rowId, column.key, newValue, row)
@@ -176,28 +170,22 @@ export function EditableCell<T>({
     const currentValue = dirtyRow?.modifiedData[column.key] ?? value
 
     if (column.render) {
-      const wrapper = (content?: React.ReactNode, className?: string) => {
-        const valueToUse = content ?? null
-        if (className) {
-          return (
-            <span
-              className={cn(className, 'text-gray-800 dark:text-green-800')}
-            >
-              {valueToUse}
-            </span>
-          )
-        }
-        return valueToUse
+      const renderContextValue = {
+        rowId,
+        columnKey: column.key,
+        originalRow: row,
+        rowIndex,
       }
 
-      const setValue = (next: T[keyof T]) => {
-        commitEdit(rowId, column.key, next, row)
-      }
-      displayContent = column.render(
-        currentValue,
-        dirtyRow?.modifiedData ?? row,
-        wrapper,
-        setValue as (value: T[keyof T]) => void,
+      displayContent = (
+        <RenderContext.Provider value={renderContextValue}>
+          {column.render(
+            currentValue,
+            dirtyRow?.modifiedData ?? row,
+            data,
+            rowIndex,
+          )}
+        </RenderContext.Provider>
       )
     } else if (availableOptions.length > 0) {
       const optionIndex = availableOptions.findIndex(
@@ -227,34 +215,25 @@ export function EditableCell<T>({
           {label}
         </span>
       )
-    } else if (column.type === 'currency') {
-      displayContent = formatCurrency(
-        currentValue as number,
-        column.locale,
-        column.currencyOptions,
-      )
     } else if (column.type === 'date') {
       displayContent = formatDate(currentValue as string, column.dateFormat)
     } else if (column.type === 'textArea') {
       const text = formatCellValue(currentValue)
       displayContent = (
         <div className="max-w-xs">
-          <div className="text-sm text-gray-800 line-clamp-2 dark:text-gray-100">
-            {text || '-'}
-          </div>
+          <div className="text-sm line-clamp-2">{text || '-'}</div>
         </div>
       )
     } else {
       displayContent = formatCellValue(currentValue)
     }
 
-    const isIdLike = column.key === ('id' as keyof typeof row)
-    const canEdit =
-      column.readonly !== true && column.editable !== false && !isIdLike
+    const isIdColumn = column.key === idColumn
+    const canEdit = column.readonly !== true && !isIdColumn
 
     return (
       <td
-        className={`px-3 py-1 border-b border-gray-200 text-sm text-gray-800 dark:text-gray-300 mx-auto ${
+        className={`px-3 py-1 border-b border-gray-200 text-sm dark:border-gray-600 mx-auto ${
           canEdit ? 'cursor-pointer' : ''
         }`}
         onClick={canEdit ? handleCellClick : undefined}
@@ -270,7 +249,7 @@ export function EditableCell<T>({
   }
 
   return (
-    <td className="px-4 py-2 whitespace-nowrap text-sm bg-blue-50 dark:bg-blue-800/20">
+    <td className="px-4 py-2 whitespace-nowrap text-sm bg-blue-50 dark:bg-blue-700/20">
       {column.type === 'select' || column.type === 'multiselect' ? (
         <SearchableSelect
           options={availableOptions.map((opt) => ({
@@ -350,11 +329,7 @@ export function EditableCell<T>({
           value={inputValue}
           onChange={(e) => {
             const newValue = e.target.value
-            if (column.type === 'currency') {
-              if (isValidCurrencyInput(newValue)) {
-                setInputValue(newValue)
-              }
-            } else if (column.type === 'date') {
+            if (column.type === 'date') {
               if (isValidDateInput(newValue, 'yyyy-MM-dd')) {
                 setInputValue(newValue)
               }
@@ -365,11 +340,7 @@ export function EditableCell<T>({
           onKeyDown={handleInputKeyDown}
           onBlur={handleInputBlur}
           className="w-full px-3 py-2 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[36px] bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-blue-800"
-          placeholder={
-            column.type === 'currency'
-              ? 'Enter amount (e.g., +1000, -500)'
-              : undefined
-          }
+          placeholder={undefined}
         />
       )}
     </td>

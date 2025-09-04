@@ -31,7 +31,17 @@ function parseURLState(): URLState {
     } else if (key === 'isActive' || value === 'true' || value === 'false') {
       filters[key] = value === 'true'
     } else {
-      filters[key] = value
+      // Check if value contains comma (potential array)
+      if (value.includes(',')) {
+        // Parse comma-separated values as array
+        const arrayValue = value
+          .split(',')
+          .map((v) => v.trim())
+          .filter((v) => v !== '')
+        filters[key] = arrayValue
+      } else {
+        filters[key] = value
+      }
     }
   })
 
@@ -54,7 +64,18 @@ function syncToURL(state: URLState): void {
   // Set filters
   Object.entries(state.filters).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return
-    sp.set(key, String(value))
+
+    // Handle arrays by joining with comma
+    if (Array.isArray(value)) {
+      const arrayString = value
+        .filter((v) => v !== undefined && v !== null && v !== '')
+        .join(',')
+      if (arrayString) {
+        sp.set(key, arrayString)
+      }
+    } else {
+      sp.set(key, String(value))
+    }
   })
 
   const url = `${window.location.pathname}?${sp.toString()}`.replace(/\?$/, '')

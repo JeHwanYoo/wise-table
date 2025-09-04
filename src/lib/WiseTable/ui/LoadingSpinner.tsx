@@ -24,7 +24,7 @@ export const LoadingSpinner = React.memo(function LoadingSpinner({
       <div
         className={`${sizeClasses[size]} border-2 border-blue-500 border-t-transparent rounded-full animate-spin`}
       />
-      <span className="text-sm text-gray-600 dark:text-gray-300">
+      <span className="text-sm text-gray-600 dark:text-gray-200">
         {message}
       </span>
     </div>

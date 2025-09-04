@@ -5,21 +5,22 @@ import type {
 } from '../contexts/FilterContext'
 import { FilterContext } from '../contexts/FilterContext'
 import { useURLState } from '../hooks/useURLState'
+import type { DefaultComponentProps } from '../types/ComponentInterfaces'
 
 interface FilterProviderProps {
   children: React.ReactNode
   filterOptions?: FilterOptions<unknown>
   defaultFilters?: Record<string, unknown>
-  enableFilters?: boolean
   useSearch?: boolean
+  componentProps?: DefaultComponentProps
 }
 
 export function FilterProvider({
   children,
   filterOptions = { fields: [] },
   defaultFilters = {},
-  enableFilters = true,
   useSearch = true,
+  componentProps,
 }: FilterProviderProps) {
   const urlState = useURLState()
 
@@ -77,11 +78,17 @@ export function FilterProvider({
     urlState.clearSearch()
   }, [urlState])
 
+  const enableFilters = Boolean(
+    filterOptions && filterOptions.fields.length > 0,
+  )
+
   const value = useMemo(
     (): FilterContextValue => ({
       filterOptions,
       currentFilters,
       searchValue: urlState.uiState.search,
+      searchPlaceholder:
+        componentProps?.searchBox?.placeholder || 'Type to search...',
       updateFilter,
       removeFilter,
       clearAllFilters,
@@ -95,6 +102,7 @@ export function FilterProvider({
       filterOptions,
       currentFilters,
       urlState.uiState.search,
+      componentProps?.searchBox?.placeholder,
       enableFilters,
       useSearch,
       updateFilter,

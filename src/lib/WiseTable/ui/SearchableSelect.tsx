@@ -251,7 +251,7 @@ export const SearchableSelect = React.memo(function SearchableSelect({
     }
 
     return (
-      <span className="text-gray-500 dark:text-gray-400">{placeholder}</span>
+      <span className="text-gray-500 dark:text-gray-300">{placeholder}</span>
     )
   }
 
@@ -270,7 +270,7 @@ export const SearchableSelect = React.memo(function SearchableSelect({
         <div className="flex-1 min-w-0">{renderSelectedDisplay()}</div>
 
         <ChevronDownIcon
-          className={`text-gray-400 transition-transform dark:text-gray-500 ${isOpen ? 'rotate-180' : ''}`}
+          className={`text-gray-400 transition-transform dark:text-gray-300 ${isOpen ? 'rotate-180' : ''}`}
         />
       </div>
 
@@ -303,7 +303,7 @@ export const SearchableSelect = React.memo(function SearchableSelect({
 
             <div className="max-h-48 overflow-y-auto">
               {filteredOptions.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-300">
                   No options found
                 </div>
               ) : (
@@ -328,7 +328,7 @@ export const SearchableSelect = React.memo(function SearchableSelect({
                       className={`px-3 py-2 cursor-pointer flex items-center justify-between ${
                         isFocused
                           ? 'bg-blue-50 dark:bg-blue-800/30'
-                          : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                       } ${isSelected ? 'bg-blue-100 dark:bg-blue-800/40' : ''}`}
                       onClick={() => handleSelect(option.value)}
                     >
