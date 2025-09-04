@@ -10,6 +10,10 @@ export const TableStoreContext = React.createContext<TableStoreValue | null>(
   null,
 )
 
-export function useTableStore(): TableStoreValue | null {
-  return React.useContext(TableStoreContext)
+export function useTableStore(): TableStoreValue {
+  const context = React.useContext(TableStoreContext)
+  if (!context) {
+    throw new Error('useTableStore must be used within TableStoreProvider')
+  }
+  return context
 }

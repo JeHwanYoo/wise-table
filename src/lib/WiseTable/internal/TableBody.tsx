@@ -65,6 +65,7 @@ export function TableBody<T, TIdColumn extends keyof T>({
                   rowIndex={rowIndex}
                   column={column}
                   value={row[column.key]}
+                  idColumn={idColumn}
                 />
               ))}
             </tr>

@@ -28,7 +28,6 @@ interface EditingProviderProps<T, TCreate = T> {
   createColumns?: WiseTableColumn<TCreate>[]
   schema: ZodType
   createSchema?: ZodType
-  createDefaultValues?: Partial<T>
   requireReason?: ReasonRequirements
   componentProps?: DefaultComponentProps
 }
@@ -51,7 +50,6 @@ export function EditingProvider<T, TCreate = T>({
   createColumns,
   schema,
   createSchema,
-  createDefaultValues,
   requireReason,
   componentProps,
 }: EditingProviderProps<T, TCreate>) {
@@ -89,6 +87,7 @@ export function EditingProvider<T, TCreate = T>({
 
   const contextValue: EditingContextValue<T> = useMemo(
     () => ({
+      data,
       currentEdit,
       setCurrentEdit,
       dirtyRows,
@@ -410,7 +409,6 @@ export function EditingProvider<T, TCreate = T>({
           isOpen={showCreateModal}
           columns={createColumns}
           schema={createSchema}
-          defaultValues={createDefaultValues as unknown as Partial<TCreate>}
           onConfirm={handleCreateConfirm}
           onCancel={handleCreateCancel}
           idColumn={undefined}

@@ -3,12 +3,12 @@ export { default, WiseTable, type WiseTableProps } from './WiseTable'
 
 // Core types
 export type {
+  ColumnValueQueryResult,
   FilterField,
   FilterOptions,
   FilterParams,
   InferSchema,
   ReasonRequirements,
-  SelectQueryResult,
   WiseTableColumn,
   WiseTableProps as WiseTableCoreProps,
 } from './internal/WiseTableCore'
@@ -41,5 +41,10 @@ export {
 // Custom hooks
 export { useFilter } from './hooks/useFilter'
 export { useLoadingState } from './hooks/useLoadingState'
+export { useSetColumn } from './hooks/useSetColumn'
 export { useUI } from './hooks/useUI'
 export { useURLState } from './hooks/useURLState'
+export { useWiseTable } from './hooks/useWiseTable'
+
+// Table store context and hook
+export { useTableStore } from './contexts/TableStoreContext'
