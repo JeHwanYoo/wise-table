@@ -72,13 +72,27 @@ Wise Table is a high-performance React table library designed for modern web app
 **Installation**
 
 ```bash
+# Install the library
 npm install @jehwanyoo2/wise-table
-# or
-yarn add @jehwanyoo2/wise-table
-# or
-pnpm add @jehwanyoo2/wise-table
-# or
-bun add @jehwanyoo2/wise-table
+
+# Install peer dependencies
+npm install @tanstack/react-query zod react react-dom clsx date-fns @hookform/resolvers react-hook-form use-debounce
+
+# Or install everything at once
+npm install @jehwanyoo2/wise-table @tanstack/react-query zod react react-dom clsx date-fns @hookform/resolvers react-hook-form use-debounce
+```
+
+**With other package managers:**
+
+```bash
+# Yarn
+yarn add @jehwanyoo2/wise-table @tanstack/react-query zod react react-dom clsx date-fns @hookform/resolvers react-hook-form use-debounce
+
+# pnpm
+pnpm add @jehwanyoo2/wise-table @tanstack/react-query zod react react-dom clsx date-fns @hookform/resolvers react-hook-form use-debounce
+
+# Bun
+bun add @jehwanyoo2/wise-table @tanstack/react-query zod react react-dom clsx date-fns @hookform/resolvers react-hook-form use-debounce
 ```
 
 ### For Development
