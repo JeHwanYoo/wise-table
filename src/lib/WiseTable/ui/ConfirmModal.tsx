@@ -30,11 +30,8 @@ export function ConfirmModal({
   if (!isOpen) return null
 
   const handleConfirm = () => {
-    if (requireReason && !reason.trim()) {
-      alert('Please provide a reason.')
-      return
-    }
-    onConfirm(reason.trim() || undefined)
+    // Allow empty reason when requireReason is true - pass empty string
+    onConfirm(requireReason ? reason : reason.trim() || undefined)
     setReason('')
   }
 
@@ -96,8 +93,7 @@ export function ConfirmModal({
             {requireReason && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
-                  Reason{' '}
-                  {requireReason && <span className="text-red-500">*</span>}
+                  Reason (optional)
                 </label>
                 <textarea
                   value={reason}

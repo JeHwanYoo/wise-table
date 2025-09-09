@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useEditingContext } from '../hooks/useWiseTable'
 import type { WiseTableColumn } from '../index'
 
@@ -7,18 +8,35 @@ export interface TableHeaderProps<T> {
 
 export function TableHeader<T>({ columns }: TableHeaderProps<T>) {
   const { selectedRowIds, setSelectedRowIds, isDirty } = useEditingContext<T>()
+  const checkboxRef = useRef<HTMLInputElement>(null)
+
+  // Calculate header checkbox state
+  const allIds = Array.from(
+    document.querySelectorAll('tbody tr[data-row-id]') || [],
+  ).map((tr) => {
+    const idStr = (tr as HTMLElement).dataset.rowId!
+    const n = Number(idStr)
+    return Number.isNaN(n) ? idStr : n
+  }) as Array<string | number>
+
+  const nonDirtyIds = allIds.filter((id) => !isDirty(id))
+  const selectedNonDirtyIds = nonDirtyIds.filter((id) => selectedRowIds.has(id))
+
+  const isAllSelected =
+    nonDirtyIds.length > 0 && selectedNonDirtyIds.length === nonDirtyIds.length
+  const isIndeterminate =
+    selectedNonDirtyIds.length > 0 &&
+    selectedNonDirtyIds.length < nonDirtyIds.length
+
+  // Update indeterminate state via ref
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = isIndeterminate
+    }
+  }, [isIndeterminate])
 
   const handleToggleAll = () => {
     // Toggle only non-dirty rows; keep dirty rows selected
-    const allIds = Array.from(
-      document.querySelectorAll('tbody tr[data-row-id]'),
-    ).map((tr) => {
-      const idStr = (tr as HTMLElement).dataset.rowId!
-      const n = Number(idStr)
-      return Number.isNaN(n) ? idStr : n
-    }) as Array<string | number>
-
-    const nonDirtyIds = allIds.filter((id) => !isDirty(id))
     const allNonDirtySelected = nonDirtyIds.every((id) =>
       selectedRowIds.has(id),
     )
@@ -37,9 +55,11 @@ export function TableHeader<T>({ columns }: TableHeaderProps<T>) {
       <tr>
         <th className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 px-6 pt-6 pb-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
           <input
+            ref={checkboxRef}
             type="checkbox"
             className="h-5 w-5 rounded border-gray-300 dark:border-gray-700"
             aria-label="Select all rows"
+            checked={isAllSelected}
             onChange={handleToggleAll}
           />
         </th>

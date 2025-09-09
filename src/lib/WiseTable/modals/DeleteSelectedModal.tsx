@@ -24,16 +24,10 @@ export function DeleteSelectedModal<T>({
 
   if (!isOpen) return null
 
-  const canDelete =
-    selectedItems.length > 0 && (!requireReason || reason.trim().length > 0)
+  const canDelete = selectedItems.length > 0
 
   const handleConfirm = () => {
     if (!canDelete) return
-
-    if (requireReason && !reason.trim()) {
-      alert('Please provide a reason for this deletion.')
-      return
-    }
 
     // Open final confirmation modal; actual deletion will be executed on confirm
     setIsConfirmOpen(true)
@@ -154,8 +148,7 @@ export function DeleteSelectedModal<T>({
             {requireReason && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
-                  Deletion Reason{' '}
-                  {requireReason && <span className="text-red-500">*</span>}
+                  Deletion Reason (optional)
                 </label>
                 <textarea
                   value={reason}
@@ -219,7 +212,7 @@ export function DeleteSelectedModal<T>({
         requireReason={false}
         onCancel={() => setIsConfirmOpen(false)}
         onConfirm={() => {
-          onConfirm(reason.trim() || undefined)
+          onConfirm(requireReason ? reason : reason.trim() || undefined)
           setReason('')
           setIsConfirmOpen(false)
         }}

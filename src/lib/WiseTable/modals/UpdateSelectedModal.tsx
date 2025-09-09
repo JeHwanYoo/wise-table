@@ -29,18 +29,11 @@ export function UpdateSelectedModal<T>({
 
   const hasChanges = dirtyRows.length > 0
   const hasValidationErrors = validationErrors.length > 0
-  const canUpdate =
-    hasChanges &&
-    !hasValidationErrors &&
-    (!requireReason || reason.trim().length > 0)
+  const canUpdate = hasChanges && !hasValidationErrors
 
   const handleConfirm = () => {
     if (!hasChanges) {
       return // Don't allow update if no changes
-    }
-    if (requireReason && !reason.trim()) {
-      alert('Please provide a reason for this update.')
-      return
     }
     // Open final confirmation modal; actual update will be executed on confirm
     setIsConfirmOpen(true)
@@ -169,8 +162,7 @@ export function UpdateSelectedModal<T>({
             {requireReason && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
-                  Update Reason{' '}
-                  {requireReason && <span className="text-red-500">*</span>}
+                  Update Reason (optional)
                 </label>
                 <textarea
                   value={reason}
@@ -253,7 +245,7 @@ export function UpdateSelectedModal<T>({
         requireReason={false}
         onCancel={() => setIsConfirmOpen(false)}
         onConfirm={() => {
-          onConfirm(reason.trim() || undefined)
+          onConfirm(requireReason ? reason : reason.trim() || undefined)
           setReason('')
           setIsConfirmOpen(false)
         }}
