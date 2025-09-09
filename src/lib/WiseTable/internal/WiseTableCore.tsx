@@ -279,7 +279,10 @@ function WiseTableCoreImpl<
                 style={tableBodyStyle}
               >
                 <table className="min-w-full table-fixed">
-                  <TableHeader columns={props.columns} />
+                  <TableHeader
+                    columns={props.columns}
+                    idColumn={props.idColumn}
+                  />
                   <TableBody
                     data={data}
                     columns={props.columns}

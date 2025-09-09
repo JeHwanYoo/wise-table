@@ -4,19 +4,23 @@ import type { WiseTableColumn } from '../index'
 
 export interface TableHeaderProps<T> {
   columns: WiseTableColumn<T>[]
+  idColumn?: keyof T
 }
 
-export function TableHeader<T>({ columns }: TableHeaderProps<T>) {
-  const { selectedRowIds, setSelectedRowIds, isDirty } = useEditingContext<T>()
+export function TableHeader<T>({ columns, idColumn }: TableHeaderProps<T>) {
+  const { selectedRowIds, setSelectedRowIds, isDirty, data } =
+    useEditingContext<T>()
   const checkboxRef = useRef<HTMLInputElement>(null)
 
-  // Calculate header checkbox state
-  const allIds = Array.from(
-    document.querySelectorAll('tbody tr[data-row-id]') || [],
-  ).map((tr) => {
-    const idStr = (tr as HTMLElement).dataset.rowId!
-    const n = Number(idStr)
-    return Number.isNaN(n) ? idStr : n
+  // Calculate header checkbox state using data instead of DOM
+  const allIds = (data || []).map((row, index) => {
+    if (idColumn) {
+      return row[idColumn] as string | number
+    }
+    // Fallback to common ID fields or index
+    const rowRecord = row as Record<string, unknown>
+    const id = rowRecord.id || rowRecord.ID || rowRecord._id || index
+    return id
   }) as Array<string | number>
 
   const nonDirtyIds = allIds.filter((id) => !isDirty(id))
@@ -37,12 +41,8 @@ export function TableHeader<T>({ columns }: TableHeaderProps<T>) {
 
   const handleToggleAll = () => {
     // Toggle only non-dirty rows; keep dirty rows selected
-    const allNonDirtySelected = nonDirtyIds.every((id) =>
-      selectedRowIds.has(id),
-    )
-
     const next = new Set<string | number>(selectedRowIds)
-    if (allNonDirtySelected) {
+    if (isAllSelected) {
       nonDirtyIds.forEach((id) => next.delete(id))
     } else {
       nonDirtyIds.forEach((id) => next.add(id))
