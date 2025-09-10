@@ -63,9 +63,9 @@ export interface FilterField<TQueryDTO = Record<string, unknown>> {
   key: keyof TQueryDTO
   label: string
   type: 'string' | 'number' | 'date' | 'boolean' | 'select'
-  options?:
-    | Array<{ label: string; value: string | number | boolean }>
-    | (() => Array<{ label: string; value: string | number | boolean }>)
+  options?: Array<{ label: string; value: string | number | boolean }>
+  // Hook-based options that will be called in React component context
+  useOptions?: () => Array<{ label: string; value: string | number | boolean }>
   placeholder?: string
 }
 

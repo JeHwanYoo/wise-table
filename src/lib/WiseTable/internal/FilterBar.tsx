@@ -126,10 +126,21 @@ export const FilterBar = React.memo(function FilterBar({
       const field = filter.filterOptions.fields.find(
         (f) => f.key === activeFilter.key,
       )
-      if (field?.options) {
-        // Handle both static array and function-based options
-        const options =
-          typeof field.options === 'function' ? field.options() : field.options
+      if (field) {
+        // Handle static array and hook-based options
+        let options: Array<{
+          label: string
+          value: string | number | boolean
+        }> = []
+
+        if (field.useOptions) {
+          // Use hook-based options (safe to call hooks here in React component)
+          options = field.useOptions()
+        } else {
+          // Use static array options
+          options = field.options || []
+        }
+
         const option = options.find(
           (opt: { label: string; value: string | number | boolean }) =>
             String(opt.value) === String(activeFilter.value),
@@ -161,11 +172,19 @@ export const FilterBar = React.memo(function FilterBar({
         )
 
       case 'select': {
-        // Handle both static array and function-based options
-        const options =
-          typeof selectedField.options === 'function'
-            ? selectedField.options()
-            : selectedField.options || []
+        // Handle static array and hook-based options
+        let options: Array<{
+          label: string
+          value: string | number | boolean
+        }> = []
+
+        if (selectedField.useOptions) {
+          // Use hook-based options (safe to call hooks here in React component)
+          options = selectedField.useOptions()
+        } else {
+          // Use static array options
+          options = selectedField.options || []
+        }
 
         return (
           <select
