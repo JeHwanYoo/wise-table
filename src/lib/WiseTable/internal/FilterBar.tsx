@@ -93,6 +93,20 @@ export const FilterBar = React.memo(function FilterBar({
 
   if (!filter.enableFilters) return null
 
+  // Check if current filter input has valid value
+  const canAddFilter = () => {
+    const field = filter.filterOptions.fields.find((f) => f.key === selectedKey)
+    if (!field || !selectedKey) return false
+
+    if (field.type === 'boolean') {
+      return true // Boolean always has a value
+    } else if (field.type === 'date') {
+      return dateStart.trim() !== '' || dateEnd.trim() !== ''
+    } else {
+      return value.trim() !== ''
+    }
+  }
+
   const handleAddFilter = () => {
     const field = filter.filterOptions.fields.find((f) => f.key === selectedKey)
     if (!field || !selectedKey) return
@@ -107,7 +121,11 @@ export const FilterBar = React.memo(function FilterBar({
         filter.updateFilter(selectedKey, dateRange)
       }
     } else {
-      if (value.trim()) filter.updateFilter(selectedKey, value.trim())
+      // For select and other types, ensure we have a valid non-empty value
+      const trimmedValue = value.trim()
+      if (trimmedValue && trimmedValue !== '') {
+        filter.updateFilter(selectedKey, trimmedValue)
+      }
     }
 
     // Reset form
@@ -289,7 +307,7 @@ export const FilterBar = React.memo(function FilterBar({
 
               <WiseTableButton
                 onClick={handleAddFilter}
-                disabled={!selectedKey}
+                disabled={!selectedKey || !canAddFilter()}
               >
                 Add Filter
               </WiseTableButton>
