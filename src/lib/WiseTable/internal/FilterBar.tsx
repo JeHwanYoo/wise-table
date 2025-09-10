@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useFilter } from '../hooks/useFilter'
 import { useURLState } from '../hooks/useURLState'
 import { useEditingContext } from '../hooks/useWiseTable'
@@ -27,13 +27,23 @@ export const FilterBar = React.memo(function FilterBar({
   const filter = useFilter()
   const urlState = useURLState()
 
-  const [selectedKey, setSelectedKey] = useState<string>(
-    filter.filterOptions.fields[0]?.key as string,
-  )
+  const [selectedKey, setSelectedKey] = useState<string>('')
   const [value, setValue] = useState<string>('')
+  const [selectValue, setSelectValue] = useState<string | number | undefined>(
+    undefined,
+  )
   const [boolValue, setBoolValue] = useState<boolean>(false)
   const [dateStart, setDateStart] = useState<string>('')
   const [dateEnd, setDateEnd] = useState<string>('')
+
+  // Reset all input states when selectedKey changes
+  useEffect(() => {
+    setValue('')
+    setSelectValue(undefined)
+    setBoolValue(false)
+    setDateStart('')
+    setDateEnd('')
+  }, [selectedKey])
 
   // Pre-compute all field options to ensure hooks are called unconditionally
   const fieldOptionsResults: Record<
@@ -102,6 +112,8 @@ export const FilterBar = React.memo(function FilterBar({
       return true // Boolean always has a value
     } else if (field.type === 'date') {
       return dateStart.trim() !== '' || dateEnd.trim() !== ''
+    } else if (field.type === 'select') {
+      return selectValue !== undefined && selectValue !== ''
     } else {
       return value.trim() !== ''
     }
@@ -120,6 +132,10 @@ export const FilterBar = React.memo(function FilterBar({
       if (dateRange.some((date) => date !== '')) {
         filter.updateFilter(selectedKey, dateRange)
       }
+    } else if (field.type === 'select') {
+      if (selectValue !== undefined && selectValue !== '') {
+        filter.updateFilter(selectedKey, selectValue)
+      }
     } else {
       // For select and other types, ensure we have a valid non-empty value
       const trimmedValue = value.trim()
@@ -130,6 +146,7 @@ export const FilterBar = React.memo(function FilterBar({
 
     // Reset form
     setValue('')
+    setSelectValue(undefined)
     setBoolValue(false)
     setDateStart('')
     setDateEnd('')
@@ -215,8 +232,8 @@ export const FilterBar = React.memo(function FilterBar({
         return (
           <SearchableSelect
             options={searchableOptions}
-            value={value}
-            onChange={(newValue) => setValue(String(newValue))}
+            value={selectValue}
+            onChange={(newValue) => setSelectValue(newValue as string | number)}
             placeholder="Select..."
             searchable={true}
             useBadge={false}
