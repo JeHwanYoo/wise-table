@@ -35,6 +35,24 @@ export const FilterBar = React.memo(function FilterBar({
   const [dateStart, setDateStart] = useState<string>('')
   const [dateEnd, setDateEnd] = useState<string>('')
 
+  // Pre-compute all field options to ensure hooks are called unconditionally
+  const fieldOptionsResults: Record<
+    string,
+    Array<{ label: string; value: string | number | boolean }>
+  > = {}
+
+  filter.filterOptions.fields.forEach((field) => {
+    if (field.useOptions) {
+      try {
+        fieldOptionsResults[field.key as string] = field.useOptions()
+      } catch {
+        fieldOptionsResults[field.key as string] = []
+      }
+    } else {
+      fieldOptionsResults[field.key as string] = field.options || []
+    }
+  })
+
   // Convert current filters to active filter array
   const activeFilters: ActiveFilter[] = []
   Object.entries(urlState.queryState.filters).forEach(([key, value]) => {
@@ -133,13 +151,8 @@ export const FilterBar = React.memo(function FilterBar({
           value: string | number | boolean
         }> = []
 
-        if (field.useOptions) {
-          // Use hook-based options (safe to call hooks here in React component)
-          options = field.useOptions()
-        } else {
-          // Use static array options
-          options = field.options || []
-        }
+        // Get pre-computed options from fieldOptionsResults
+        options = fieldOptionsResults[field.key as string] || []
 
         const option = options.find(
           (opt: { label: string; value: string | number | boolean }) =>
@@ -172,19 +185,8 @@ export const FilterBar = React.memo(function FilterBar({
         )
 
       case 'select': {
-        // Handle static array and hook-based options
-        let options: Array<{
-          label: string
-          value: string | number | boolean
-        }> = []
-
-        if (selectedField.useOptions) {
-          // Use hook-based options (safe to call hooks here in React component)
-          options = selectedField.useOptions()
-        } else {
-          // Use static array options
-          options = selectedField.options || []
-        }
+        // Get pre-computed options from fieldOptionsResults
+        const options = fieldOptionsResults[selectedField.key as string] || []
 
         // Convert to SearchableSelect format
         const searchableOptions = options.map((option) => ({

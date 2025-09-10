@@ -1,6 +1,6 @@
 {
   "name": "@jehwanyoo2/wise-table",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "A powerful React table library designed for modern data-driven applications",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
