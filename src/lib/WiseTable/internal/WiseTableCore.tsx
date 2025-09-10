@@ -267,15 +267,8 @@ function WiseTableCoreImpl<
         <TableStoreProvider>
           <div className={`wise-table relative ${props.className || ''}`}>
             <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden dark:bg-gray-800 dark:border-gray-700">
-              {props.tableActions && (
-                <div className="sticky top-0 z-30 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-800">
-                  <TableActions {...props.tableActions} />
-                </div>
-              )}
-
-              <div
-                className={`sticky ${props.tableActions ? 'top-[68px]' : 'top-0'} z-20 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-800`}
-              >
+              <div className="sticky top-0 z-30 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-800">
+                {props.tableActions && <TableActions {...props.tableActions} />}
                 <FilterBar />
               </div>
               <div
