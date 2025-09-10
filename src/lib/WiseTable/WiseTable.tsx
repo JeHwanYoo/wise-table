@@ -21,7 +21,8 @@ export type WiseTableProps<
   S extends ZodType,
   D = PagedData<InferSchema<S>>,
   C extends ZodType | undefined = undefined,
-> = CoreProps<S, D, C>
+  Q extends ZodType | undefined = undefined,
+> = CoreProps<S, D, C, Q>
 
 /**
  * WiseTable main component
@@ -33,7 +34,8 @@ export function WiseTable<
   S extends ZodType,
   D = PagedData<InferSchema<S>>,
   C extends ZodType | undefined = undefined,
->(props: WiseTableProps<S, D, C>) {
+  Q extends ZodType | undefined = undefined,
+>(props: WiseTableProps<S, D, C, Q>) {
   const {
     useSearch = true,
     filterOptions,
@@ -73,7 +75,7 @@ export function WiseTable<
                   componentProps={componentProps}
                 >
                   <WiseTableCore
-                    {...(coreProps as unknown as CoreProps<S, D, C>)}
+                    {...(coreProps as unknown as CoreProps<S, D, C, Q>)}
                     useSearch={useSearch}
                     filterOptions={filterOptions}
                     tableHeight={tableHeight}

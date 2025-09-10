@@ -88,10 +88,12 @@ export interface WiseTableProps<
   S extends ZodType,
   D = PagedData<InferSchema<S>>,
   C extends ZodType | undefined = undefined,
+  Q extends ZodType | undefined = undefined,
 > {
   schema: S
   createSchema?: C
-  querySchema?: ZodType
+  /** Optional schema that defines and validates query/filter parameters */
+  querySchema?: Q
   idColumn: keyof InferSchema<S>
   columns: WiseTableColumn<InferSchema<S>>[]
   /** Optional columns dedicated for Create modal. Falls back to columns when omitted. */
@@ -108,8 +110,12 @@ export interface WiseTableProps<
   >
   tableHeight?: string
   className?: string
-  filterOptions?: FilterOptions<C extends ZodType ? zInfer<C> : unknown>
-  defaultFilters?: FilterParams<C extends ZodType ? zInfer<C> : unknown>
+  /**
+   * Filter options are tied to the query parameters, not to create schema.
+   * When a querySchema is provided, its inferred type will be used here.
+   */
+  filterOptions?: FilterOptions<Q extends ZodType ? zInfer<Q> : unknown>
+  defaultFilters?: FilterParams<Q extends ZodType ? zInfer<Q> : unknown>
   requireReason?: ReasonRequirements
   componentProps?: DefaultComponentProps
 }
@@ -118,7 +124,8 @@ function WiseTableCoreImpl<
   S extends ZodType,
   D = PagedData<InferSchema<S>>,
   C extends ZodType | undefined = undefined,
->(props: WiseTableProps<S, D, C>) {
+  Q extends ZodType | undefined = undefined,
+>(props: WiseTableProps<S, D, C, Q>) {
   const urlState = useURLState()
   const loadingState = useLoadingState()
 
