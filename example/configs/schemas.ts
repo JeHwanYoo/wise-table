@@ -50,6 +50,7 @@ export const QueryEmployeeSchema = z.object({
   minSalary: z.number().optional(),
   maxSalary: z.number().optional(),
   // Date range for hiredDate
+  hiredDate: z.string().optional(),
   start_hiredDate: z.string().optional(),
   end_hiredDate: z.string().optional(),
   page: z.number().default(1),

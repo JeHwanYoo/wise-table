@@ -1,10 +1,12 @@
 import { createContext } from 'react'
 
-export interface FilterField {
-  key: string
+export interface FilterField<TQueryDTO = Record<string, unknown>> {
+  key: keyof TQueryDTO
   label: string
   type: 'string' | 'number' | 'date' | 'boolean' | 'select'
-  options?: Array<{ label: string; value: string | number | boolean }>
+  options?:
+    | Array<{ label: string; value: string | number | boolean }>
+    | (() => Array<{ label: string; value: string | number | boolean }>)
   placeholder?: string
 }
 
@@ -12,27 +14,22 @@ export type FilterParams<TQueryDTO = Record<string, unknown>> =
   Partial<TQueryDTO>
 
 export interface FilterOptions<TQueryDTO = Record<string, unknown>> {
-  readonly fields: readonly FilterField[]
-  enableQuickFilters?: boolean
-  quickFilters?: ReadonlyArray<{
-    label: string
-    params: FilterParams<TQueryDTO>
-  }>
+  readonly fields: readonly FilterField<TQueryDTO>[]
 }
 
-export interface FilterContextValue {
-  filterOptions: FilterOptions<unknown>
-  currentFilters: Record<string, unknown>
+export interface FilterContextValue<TQueryDTO = Record<string, unknown>> {
+  filterOptions: FilterOptions<TQueryDTO>
   searchValue: string
   searchPlaceholder: string
   updateFilter: (key: string, value: unknown) => void
   removeFilter: (key: string) => void
   clearAllFilters: () => void
-  applyQuickFilter: (params: Record<string, unknown>) => void
   updateSearch: (search: string) => void
   clearSearch: () => void
   enableFilters: boolean
   useSearch: boolean
 }
 
-export const FilterContext = createContext<FilterContextValue | null>(null)
+export const FilterContext = createContext<FilterContextValue<unknown> | null>(
+  null,
+)

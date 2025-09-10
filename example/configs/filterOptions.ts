@@ -30,7 +30,12 @@ export const filterOptions: FilterOptions<QueryEmployeeDTO> = {
       key: 'department',
       label: 'Department',
       type: 'select' as const,
-      options: [{ label: 'All', value: '' }, ...departmentOptions],
+      // Function-based options - can use hooks inside!
+      options: () => {
+        // This function will be called each time the filter dropdown is rendered
+        // You can use React hooks here if needed
+        return [{ label: 'All', value: '' }, ...departmentOptions]
+      },
     },
     {
       key: 'role',

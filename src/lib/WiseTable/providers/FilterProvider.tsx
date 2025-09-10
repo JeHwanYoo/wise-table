@@ -7,25 +7,25 @@ import { FilterContext } from '../contexts/FilterContext'
 import { useURLState } from '../hooks/useURLState'
 import type { DefaultComponentProps } from '../types/ComponentInterfaces'
 
-interface FilterProviderProps {
+interface FilterProviderProps<TQueryDTO = Record<string, unknown>> {
   children: React.ReactNode
-  filterOptions?: FilterOptions<unknown>
+  filterOptions?: FilterOptions<TQueryDTO>
   defaultFilters?: Record<string, unknown>
   useSearch?: boolean
   componentProps?: DefaultComponentProps
 }
 
-export function FilterProvider({
+export function FilterProvider<TQueryDTO = Record<string, unknown>>({
   children,
   filterOptions = { fields: [] },
   defaultFilters = {},
   useSearch = true,
   componentProps,
-}: FilterProviderProps) {
+}: FilterProviderProps<TQueryDTO>) {
   const urlState = useURLState()
 
-  // Merge default filters with URL filters
-  const currentFilters = useMemo(
+  // Get current filters from URL state (merged with defaults when needed)
+  const getCurrentFilters = useCallback(
     () => ({
       ...defaultFilters,
       ...urlState.queryState.filters,
@@ -35,7 +35,7 @@ export function FilterProvider({
 
   const updateFilter = useCallback(
     (key: string, value: unknown) => {
-      const newFilters = { ...currentFilters }
+      const newFilters = { ...getCurrentFilters() }
       if (value === undefined || value === null || value === '') {
         delete newFilters[key]
       } else {
@@ -43,29 +43,21 @@ export function FilterProvider({
       }
       urlState.setFilters(newFilters)
     },
-    [currentFilters, urlState],
+    [getCurrentFilters, urlState],
   )
 
   const removeFilter = useCallback(
     (key: string) => {
-      const newFilters = { ...currentFilters }
+      const newFilters = { ...getCurrentFilters() }
       delete newFilters[key]
       urlState.setFilters(newFilters)
     },
-    [currentFilters, urlState],
+    [getCurrentFilters, urlState],
   )
 
   const clearAllFilters = useCallback(() => {
     urlState.clearAllFilters()
   }, [urlState])
-
-  const applyQuickFilter = useCallback(
-    (params: Record<string, unknown>) => {
-      const newFilters = { ...currentFilters, ...params }
-      urlState.setFilters(newFilters)
-    },
-    [currentFilters, urlState],
-  )
 
   const updateSearch = useCallback(
     (search: string) => {
@@ -83,16 +75,14 @@ export function FilterProvider({
   )
 
   const value = useMemo(
-    (): FilterContextValue => ({
+    (): FilterContextValue<TQueryDTO> => ({
       filterOptions,
-      currentFilters,
       searchValue: urlState.uiState.search,
       searchPlaceholder:
         componentProps?.searchBox?.placeholder || 'Type to search...',
       updateFilter,
       removeFilter,
       clearAllFilters,
-      applyQuickFilter,
       updateSearch,
       clearSearch,
       enableFilters,
@@ -100,7 +90,6 @@ export function FilterProvider({
     }),
     [
       filterOptions,
-      currentFilters,
       urlState.uiState.search,
       componentProps?.searchBox?.placeholder,
       enableFilters,
@@ -108,11 +97,14 @@ export function FilterProvider({
       updateFilter,
       removeFilter,
       clearAllFilters,
-      applyQuickFilter,
       updateSearch,
       clearSearch,
     ],
   )
 
-  return React.createElement(FilterContext.Provider, { value }, children)
+  return React.createElement(
+    FilterContext.Provider,
+    { value: value as FilterContextValue<unknown> },
+    children,
+  )
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useFilter } from '../hooks/useFilter'
+import { useURLState } from '../hooks/useURLState'
 import { useEditingContext } from '../hooks/useWiseTable'
 import { CloseIcon, SearchBox, WiseTableButton } from '../ui'
 
@@ -24,6 +25,7 @@ export const FilterBar = React.memo(function FilterBar({
 }: FilterBarProps) {
   const { hasUnsavedChanges, discardChanges } = useEditingContext()
   const filter = useFilter()
+  const urlState = useURLState()
 
   const [selectedKey, setSelectedKey] = useState<string>(
     filter.filterOptions.fields[0]?.key as string,
@@ -35,7 +37,7 @@ export const FilterBar = React.memo(function FilterBar({
 
   // Convert current filters to active filter array
   const activeFilters: ActiveFilter[] = []
-  Object.entries(filter.currentFilters).forEach(([key, value]) => {
+  Object.entries(urlState.queryState.filters).forEach(([key, value]) => {
     const field = filter.filterOptions.fields.find(
       (f: {
         key: string
@@ -122,14 +124,13 @@ export const FilterBar = React.memo(function FilterBar({
     if (activeFilter.type === 'select') {
       // Find the corresponding field to get options
       const field = filter.filterOptions.fields.find(
-        (f: {
-          key: string
-          type: string
-          options?: { label: string; value: string | number | boolean }[]
-        }) => f.key === activeFilter.key,
+        (f) => f.key === activeFilter.key,
       )
       if (field?.options) {
-        const option = field.options.find(
+        // Handle both static array and function-based options
+        const options =
+          typeof field.options === 'function' ? field.options() : field.options
+        const option = options.find(
           (opt: { label: string; value: string | number | boolean }) =>
             String(opt.value) === String(activeFilter.value),
         )
@@ -159,7 +160,13 @@ export const FilterBar = React.memo(function FilterBar({
           </select>
         )
 
-      case 'select':
+      case 'select': {
+        // Handle both static array and function-based options
+        const options =
+          typeof selectedField.options === 'function'
+            ? selectedField.options()
+            : selectedField.options || []
+
         return (
           <select
             value={value}
@@ -167,7 +174,7 @@ export const FilterBar = React.memo(function FilterBar({
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
           >
             <option value="">Select...</option>
-            {selectedField.options?.map(
+            {options.map(
               (option: { label: string; value: string | number | boolean }) => (
                 <option key={String(option.value)} value={String(option.value)}>
                   {option.label}
@@ -176,6 +183,7 @@ export const FilterBar = React.memo(function FilterBar({
             )}
           </select>
         )
+      }
 
       case 'date':
         return (
@@ -298,33 +306,6 @@ export const FilterBar = React.memo(function FilterBar({
             ))}
           </div>
         )}
-
-        {filter.filterOptions.enableQuickFilters &&
-          filter.filterOptions.quickFilters && (
-            <div className="flex flex-wrap gap-2">
-              <span className="text-sm text-gray-600 self-center dark:text-gray-300">
-                Quick filters:
-              </span>
-              {filter.filterOptions.quickFilters.map(
-                (
-                  quickFilter: {
-                    label: string
-                    params: Record<string, unknown>
-                  },
-                  index: number,
-                ) => (
-                  <WiseTableButton
-                    key={index}
-                    onClick={() => filter.applyQuickFilter(quickFilter.params)}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    {quickFilter.label}
-                  </WiseTableButton>
-                ),
-              )}
-            </div>
-          )}
 
         {hasUnsavedChanges() && (
           <div className="flex items-center gap-2 px-3 py-2 bg-yellow-100 border border-yellow-300 rounded-md text-sm text-yellow-800 dark:bg-yellow-700/20 dark:border-yellow-600 dark:text-yellow-300">

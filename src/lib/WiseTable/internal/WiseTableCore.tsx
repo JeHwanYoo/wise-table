@@ -59,11 +59,13 @@ export interface WiseTableColumn<
 }
 
 // Filter types
-export interface FilterField {
-  key: string
+export interface FilterField<TQueryDTO = Record<string, unknown>> {
+  key: keyof TQueryDTO
   label: string
   type: 'string' | 'number' | 'date' | 'boolean' | 'select'
-  options?: Array<{ label: string; value: string | number | boolean }>
+  options?:
+    | Array<{ label: string; value: string | number | boolean }>
+    | (() => Array<{ label: string; value: string | number | boolean }>)
   placeholder?: string
 }
 
@@ -71,12 +73,7 @@ export type FilterParams<TQueryDTO = Record<string, unknown>> =
   Partial<TQueryDTO>
 
 export interface FilterOptions<TQueryDTO = Record<string, unknown>> {
-  readonly fields: readonly FilterField[]
-  enableQuickFilters?: boolean
-  quickFilters?: ReadonlyArray<{
-    label: string
-    params: FilterParams<TQueryDTO>
-  }>
+  readonly fields: readonly FilterField<TQueryDTO>[]
 }
 
 // Reason requirement configuration for CRUD operations
@@ -111,8 +108,8 @@ export interface WiseTableProps<
   >
   tableHeight?: string
   className?: string
-  filterOptions?: FilterOptions<unknown>
-  defaultFilters?: FilterParams<unknown>
+  filterOptions?: FilterOptions<C extends ZodType ? zInfer<C> : unknown>
+  defaultFilters?: FilterParams<C extends ZodType ? zInfer<C> : unknown>
   requireReason?: ReasonRequirements
   componentProps?: DefaultComponentProps
 }

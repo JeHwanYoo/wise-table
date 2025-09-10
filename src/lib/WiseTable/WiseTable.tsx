@@ -3,7 +3,6 @@ import type { CRUDActions, PagedData } from './hooks/useWiseTable'
 import {
   WiseTableCore,
   type WiseTableProps as CoreProps,
-  type FilterOptions,
   type InferSchema,
   type WiseTableColumn,
 } from './internal/WiseTableCore'
@@ -51,7 +50,7 @@ export function WiseTable<
     <URLStateProvider>
       <LoadingStateProvider>
         <FilterProvider
-          filterOptions={filterOptions as FilterOptions<unknown>}
+          filterOptions={filterOptions}
           defaultFilters={defaultFilters}
           useSearch={useSearch}
           componentProps={componentProps}
