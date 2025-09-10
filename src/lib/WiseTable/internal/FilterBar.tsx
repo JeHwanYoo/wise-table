@@ -200,7 +200,7 @@ export const FilterBar = React.memo(function FilterBar({
             placeholder="Select..."
             searchable={true}
             useBadge={false}
-            className="w-full"
+            className="min-w-0 max-w-xs"
           />
         )
       }
