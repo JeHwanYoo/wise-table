@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useFilter } from '../hooks/useFilter'
 import { useURLState } from '../hooks/useURLState'
 import { useEditingContext } from '../hooks/useWiseTable'
-import { CloseIcon, SearchBox, WiseTableButton } from '../ui'
+import { CloseIcon, SearchBox, SearchableSelect, WiseTableButton } from '../ui'
 
 // Active filter display type
 type ActiveFilter = {
@@ -186,21 +186,22 @@ export const FilterBar = React.memo(function FilterBar({
           options = selectedField.options || []
         }
 
+        // Convert to SearchableSelect format
+        const searchableOptions = options.map((option) => ({
+          label: option.label,
+          value: option.value as string | number, // SearchableSelect expects string | number
+        }))
+
         return (
-          <select
+          <SearchableSelect
+            options={searchableOptions}
             value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
-          >
-            <option value="">Select...</option>
-            {options.map(
-              (option: { label: string; value: string | number | boolean }) => (
-                <option key={String(option.value)} value={String(option.value)}>
-                  {option.label}
-                </option>
-              ),
-            )}
-          </select>
+            onChange={(newValue) => setValue(String(newValue))}
+            placeholder="Select..."
+            searchable={true}
+            useBadge={false}
+            className="w-full"
+          />
         )
       }
 
