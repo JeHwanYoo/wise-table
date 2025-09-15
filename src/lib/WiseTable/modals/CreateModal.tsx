@@ -597,14 +597,32 @@ export function CreateModal<T, TSchema extends ZodType>({
               </div>
             </div>
             {hasInteracted && totalErrors > 0 && (
-              <div className="mb-3 max-h-28 overflow-auto rounded-md border border-red-300 bg-red-100 p-3 dark:border-red-700 dark:bg-red-800/30">
-                <ul className="text-xs text-red-700 space-y-1 dark:text-red-300">
+              <div className="mb-3 max-h-32 overflow-auto rounded-md border border-red-300 bg-red-50 p-3 dark:border-red-700 dark:bg-red-800/30">
+                <h4 className="text-sm font-medium text-red-800 mb-2 dark:text-red-300">
+                  ❌ Validation Errors ({totalErrors} error
+                  {totalErrors !== 1 ? 's' : ''})
+                </h4>
+                <div className="space-y-2">
                   {aggregatedErrors.map((err, i) => (
-                    <li key={`${err.rowIndex}-${String(err.fieldKey)}-${i}`}>
-                      Row {err.rowIndex} • {err.fieldLabel}: {err.message}
-                    </li>
+                    <div
+                      key={`${err.rowIndex}-${String(err.fieldKey)}-${i}`}
+                      className="flex items-start gap-2"
+                    >
+                      <div className="flex-shrink-0 w-12 text-xs font-medium text-red-700 dark:text-red-400">
+                        Row {err.rowIndex}
+                      </div>
+                      <div className="flex-1 text-xs text-red-700 dark:text-red-300">
+                        <span className="font-medium text-red-800 dark:text-red-200">
+                          {err.fieldLabel}
+                        </span>
+                        <span className="text-red-600 dark:text-red-400 ml-1">
+                          ({String(err.fieldKey)})
+                        </span>
+                        : {err.message}
+                      </div>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             )}
             <div className="flex justify-end gap-3">

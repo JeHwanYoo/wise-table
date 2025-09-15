@@ -3,10 +3,15 @@ import type { DirtyRow } from '../hooks/useWiseTable'
 import { ConfirmModal, WiseTableButton } from '../ui'
 import { formatCellValue } from '../utils/formatCellValue'
 
+interface ValidationError {
+  itemId: string | number
+  errors: string[] | Array<{ field?: string; message: string }>
+}
+
 interface UpdateSelectedModalProps<T> {
   isOpen: boolean
   dirtyRows: DirtyRow<T>[]
-  validationErrors?: Array<{ itemId: string | number; errors: string[] }>
+  validationErrors?: ValidationError[]
   onConfirm: (reason?: string) => void
   onCancel: () => void
   requireReason?: boolean
@@ -85,14 +90,58 @@ export function UpdateSelectedModal<T>({
                         ID: {formatCellValue(error.itemId)}
                       </div>
                       <div className="space-y-1">
-                        {error.errors.map((errorMsg, errorIndex) => (
-                          <div
-                            key={errorIndex}
-                            className="text-xs text-red-600 dark:text-red-400"
-                          >
-                            • {errorMsg}
-                          </div>
-                        ))}
+                        {error.errors.map((errorItem, errorIndex) => {
+                          // Handle structured error objects
+                          if (
+                            typeof errorItem === 'object' &&
+                            errorItem !== null
+                          ) {
+                            const { field, message } = errorItem
+                            return (
+                              <div
+                                key={errorIndex}
+                                className="text-xs text-red-600 dark:text-red-400 flex items-start gap-1"
+                              >
+                                <span>•</span>
+                                {field && (
+                                  <span className="font-medium text-red-700 dark:text-red-300">
+                                    {field}:
+                                  </span>
+                                )}
+                                <span>{message}</span>
+                              </div>
+                            )
+                          }
+
+                          // Handle string errors - try to extract field name
+                          const errorMsg = String(errorItem)
+                          const fieldMatch = errorMsg.match(/^(.+?):\s*(.+)$/)
+                          if (fieldMatch) {
+                            const [, fieldName, message] = fieldMatch
+                            return (
+                              <div
+                                key={errorIndex}
+                                className="text-xs text-red-600 dark:text-red-400 flex items-start gap-1"
+                              >
+                                <span>•</span>
+                                <span className="font-medium text-red-700 dark:text-red-300">
+                                  {fieldName}:
+                                </span>
+                                <span>{message}</span>
+                              </div>
+                            )
+                          }
+
+                          // Fallback for plain error messages
+                          return (
+                            <div
+                              key={errorIndex}
+                              className="text-xs text-red-600 dark:text-red-400"
+                            >
+                              • {errorMsg}
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   ))}

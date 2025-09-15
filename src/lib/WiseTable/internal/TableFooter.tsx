@@ -209,7 +209,7 @@ export function TableFooter<T>({
                 onKeyDown={handlePageInputKeyDown}
                 placeholder={pagination.page.toString()}
                 disabled={isDirtyState}
-                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed bg-white text-gray-800 placeholder-gray-400 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"
+                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed bg-white text-gray-800 placeholder-gray-400 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
                 title={
                   isDirtyState
                     ? 'Save changes before navigation'
