@@ -233,11 +233,11 @@ export const FilterBar = React.memo(function FilterBar({
   if (!filter.enableFilters) return null
 
   // Check if field has valid value for filtering
-  const canApplyFilter = (fieldKey: string) => {
+  const canApplyFilter = (fieldKey: string, explicitValue?: unknown) => {
     const field = filter.filterOptions.fields.find((f) => f.key === fieldKey)
     if (!field) return false
 
-    const value = getFieldValue(fieldKey)
+    const value = explicitValue ?? getFieldValue(fieldKey)
 
     if (field.type === 'boolean') {
       return true // Boolean always has a value
@@ -262,7 +262,7 @@ export const FilterBar = React.memo(function FilterBar({
 
   const applyFilter = (fieldKey: string, explicitValue?: unknown) => {
     const field = filter.filterOptions.fields.find((f) => f.key === fieldKey)
-    if (!field || !canApplyFilter(fieldKey)) return
+    if (!field || !canApplyFilter(fieldKey, explicitValue)) return
 
     const value = explicitValue ?? getFieldValue(fieldKey)
 
@@ -360,7 +360,6 @@ export const FilterBar = React.memo(function FilterBar({
               }
               onChange={(e) => {
                 if (e.target.value === '*') {
-                  // Clear the filter
                   clearFilter(fieldKey)
                 } else {
                   const newValue = e.target.value === 'true'
@@ -398,10 +397,8 @@ export const FilterBar = React.memo(function FilterBar({
               value={currentValue as string | number}
               onChange={(newValue) => {
                 if (newValue === '*') {
-                  // Clear the filter
                   clearFilter(fieldKey)
                 } else {
-                  // Apply immediately with the chosen value to avoid stale reads
                   updateFieldValue(fieldKey, newValue)
                   applyFilter(fieldKey, newValue)
                 }
@@ -452,7 +449,6 @@ export const FilterBar = React.memo(function FilterBar({
                 value={dateRangeValue.dateType}
                 onChange={(newValue) => {
                   if (newValue === '*') {
-                    // Clear the entire date-range filter
                     clearFilter(fieldKey)
                   } else {
                     const newDateRangeValue = {
@@ -460,9 +456,8 @@ export const FilterBar = React.memo(function FilterBar({
                       dateType: String(newValue),
                     }
                     updateFieldValue(fieldKey, newDateRangeValue)
-                    // Apply filter if date range is already set
                     if (
-                      newDateRangeValue.startDate ||
+                      newDateRangeValue.startDate &&
                       newDateRangeValue.endDate
                     ) {
                       applyFilter(fieldKey, newDateRangeValue)
