@@ -8,10 +8,11 @@ import { CloseIcon, SearchBox, SearchableSelect, WiseTableButton } from '../ui'
 type ActiveFilter = {
   key: string
   label: string
-  type: 'string' | 'number' | 'date' | 'boolean' | 'select'
+  type: 'string' | 'number' | 'date-range' | 'boolean' | 'select'
   // mutually exclusive by type
   value?: string
   bool?: boolean
+  dateType?: string
   start?: string
   end?: string
 }
@@ -78,21 +79,26 @@ export const FilterBar = React.memo(function FilterBar({
     const field = filter.filterOptions.fields.find(
       (f: {
         key: string
-        type: 'string' | 'number' | 'date' | 'boolean' | 'select'
+        type: 'string' | 'number' | 'date-range' | 'boolean' | 'select'
         label: string
       }) => f.key === key,
     )
     if (!field) return
 
-    if (field.type === 'date' && Array.isArray(value)) {
-      // Handle date array: [startDate, endDate]
-      activeFilters.push({
-        key,
-        label: field.label,
-        type: 'date',
-        start: value[0] || '',
-        end: value[1] || '',
-      })
+    if (field.type === 'date-range') {
+      // Handle date-range: expect object with dateType and date range
+      const dateRangeValue = value as { dateType: string; date: string }
+      if (dateRangeValue && dateRangeValue.dateType && dateRangeValue.date) {
+        const [start, end] = dateRangeValue.date.split(',')
+        activeFilters.push({
+          key,
+          label: field.label,
+          type: 'date-range',
+          dateType: dateRangeValue.dateType,
+          start: start || '',
+          end: end || '',
+        })
+      }
     } else if (field.type === 'boolean') {
       activeFilters.push({
         key,
@@ -121,9 +127,15 @@ export const FilterBar = React.memo(function FilterBar({
 
     if (field.type === 'boolean') {
       return true // Boolean always has a value
-    } else if (field.type === 'date') {
-      const dateRange = value as [string, string] | undefined
-      return dateRange && (dateRange[0]?.trim() || dateRange[1]?.trim())
+    } else if (field.type === 'date-range') {
+      const dateRangeValue = value as
+        | { dateType: string; startDate: string; endDate: string }
+        | undefined
+      return (
+        dateRangeValue &&
+        dateRangeValue.dateType &&
+        (dateRangeValue.startDate?.trim() || dateRangeValue.endDate?.trim())
+      )
     } else if (field.type === 'select') {
       return value !== undefined && value !== ''
     } else {
@@ -139,10 +151,23 @@ export const FilterBar = React.memo(function FilterBar({
 
     if (field.type === 'boolean') {
       filter.updateFilter(fieldKey, Boolean(value))
-    } else if (field.type === 'date') {
-      const dateRange = value as [string, string]
-      if (dateRange && dateRange.some((date) => date && date.trim() !== '')) {
-        filter.updateFilter(fieldKey, dateRange)
+    } else if (field.type === 'date-range') {
+      const dateRangeValue = value as {
+        dateType: string
+        startDate: string
+        endDate: string
+      }
+      if (
+        dateRangeValue &&
+        dateRangeValue.dateType &&
+        (dateRangeValue.startDate?.trim() || dateRangeValue.endDate?.trim())
+      ) {
+        // Format: dateType=requestedAt & date=2025-09-30,2025-10-31
+        const dateRange = `${dateRangeValue.startDate || ''},${dateRangeValue.endDate || ''}`
+        filter.updateFilter(fieldKey, {
+          dateType: dateRangeValue.dateType,
+          date: dateRange,
+        })
       }
     } else if (field.type === 'select') {
       if (value !== undefined && value !== '') {
@@ -174,6 +199,7 @@ export const FilterBar = React.memo(function FilterBar({
     label: string
     type: string
     placeholder?: string
+    dateTypes?: string[]
   }) => {
     const fieldKey = field.key as string
     const isActive = urlState.queryState.filters[fieldKey] !== undefined
@@ -235,39 +261,86 @@ export const FilterBar = React.memo(function FilterBar({
         )
       }
 
-      case 'date': {
-        const dateRange = (currentValue as [string, string]) || ['', '']
+      case 'date-range': {
+        const dateRangeValue = (currentValue as {
+          dateType: string
+          startDate: string
+          endDate: string
+        }) || {
+          dateType: '',
+          startDate: '',
+          endDate: '',
+        }
+
+        const dateTypeOptions =
+          field.dateTypes?.map((dateType) => ({
+            value: dateType,
+            label: dateType,
+          })) || []
+
         return (
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {field.label}
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            {/* Date Type and Date Range should be cohesive - no line break */}
+            <div className="grid grid-cols-3 gap-2">
+              {/* Date Type Selector */}
+              <SearchableSelect
+                options={dateTypeOptions}
+                value={dateRangeValue.dateType}
+                onChange={(newValue) => {
+                  const newDateRangeValue = {
+                    ...dateRangeValue,
+                    dateType: String(newValue),
+                  }
+                  updateFieldValue(fieldKey, newDateRangeValue)
+                  // Don't apply filter until both dateType and date range are set
+                }}
+                placeholder="Type"
+                searchable={true}
+                useBadge={false}
+                className={`min-w-0 ${isActive ? '!border-blue-500 !bg-blue-50 dark:!bg-blue-700/20' : ''}`}
+              />
+
+              {/* Start Date */}
               <input
                 type="date"
-                value={dateRange[0] || ''}
+                value={dateRangeValue.startDate || ''}
                 onChange={(e) => {
-                  const newRange: [string, string] = [
-                    e.target.value,
-                    dateRange[1] || '',
-                  ]
-                  updateFieldValue(fieldKey, newRange)
+                  const newDateRangeValue = {
+                    ...dateRangeValue,
+                    startDate: e.target.value,
+                  }
+                  updateFieldValue(fieldKey, newDateRangeValue)
                 }}
-                onBlur={() => applyFilter(fieldKey)}
+                onBlur={() => {
+                  // Only apply filter if dateType is also selected
+                  if (dateRangeValue.dateType) {
+                    applyFilter(fieldKey)
+                  }
+                }}
                 placeholder="From"
                 className={`${baseInputClass} ${activeInputClass}`}
               />
+
+              {/* End Date */}
               <input
                 type="date"
-                value={dateRange[1] || ''}
+                value={dateRangeValue.endDate || ''}
                 onChange={(e) => {
-                  const newRange: [string, string] = [
-                    dateRange[0] || '',
-                    e.target.value,
-                  ]
-                  updateFieldValue(fieldKey, newRange)
+                  const newDateRangeValue = {
+                    ...dateRangeValue,
+                    endDate: e.target.value,
+                  }
+                  updateFieldValue(fieldKey, newDateRangeValue)
                 }}
-                onBlur={() => applyFilter(fieldKey)}
+                onBlur={() => {
+                  // Only apply filter if dateType is also selected
+                  if (dateRangeValue.dateType) {
+                    applyFilter(fieldKey)
+                  }
+                }}
                 placeholder="To"
                 className={`${baseInputClass} ${activeInputClass}`}
               />
@@ -361,6 +434,7 @@ export const FilterBar = React.memo(function FilterBar({
                   label: string
                   type: string
                   placeholder?: string
+                  dateTypes?: string[]
                 }) => (
                   <div key={field.key} className="relative">
                     {renderFilterField(field)}
