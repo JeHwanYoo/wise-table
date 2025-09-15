@@ -284,9 +284,13 @@ export const FilterBar = React.memo(function FilterBar({
         // Format: dateType=requestedAt & date=2025-09-30,2025-10-31
         const dateRange = `${dateRangeValue.startDate || ''},${dateRangeValue.endDate || ''}`
 
-        // Update both dateType and date as separate query parameters
-        filter.updateFilter('dateType', dateRangeValue.dateType)
-        filter.updateFilter('date', dateRange)
+        // Apply both parameters at once to avoid overwriting
+        const newFilters = {
+          ...urlState.queryState.filters,
+          dateType: dateRangeValue.dateType,
+          date: dateRange,
+        }
+        urlState.setFilters(newFilters)
       }
     } else if (field.type === 'select') {
       if (value !== undefined && value !== '') {
