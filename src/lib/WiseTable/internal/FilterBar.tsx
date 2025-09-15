@@ -47,7 +47,35 @@ export const FilterBar = React.memo(function FilterBar({
 
   // Get current value for a specific field
   const getFieldValue = (fieldKey: string, defaultValue: unknown = '') => {
-    // First check URL state, then local state, then default
+    const field = filter.filterOptions.fields.find((f) => f.key === fieldKey)
+
+    if (field?.type === 'date-range') {
+      // For date-range, construct value from dateType and date parameters
+      const dateType =
+        urlState.queryState.filters['dateType'] ?? fieldValues['dateType'] ?? ''
+      const date =
+        urlState.queryState.filters['date'] ?? fieldValues['date'] ?? ''
+
+      if (date && typeof date === 'string') {
+        const [startDate, endDate] = date.split(',')
+        return {
+          dateType: String(dateType),
+          startDate: startDate || '',
+          endDate: endDate || '',
+        }
+      }
+
+      // Return from local state if exists
+      return (
+        fieldValues[fieldKey] ?? {
+          dateType: '',
+          startDate: '',
+          endDate: '',
+        }
+      )
+    }
+
+    // For other field types, use normal lookup
     return (
       urlState.queryState.filters[fieldKey] ??
       fieldValues[fieldKey] ??
@@ -75,7 +103,36 @@ export const FilterBar = React.memo(function FilterBar({
 
   // Convert current filters to active filter array
   const activeFilters: ActiveFilter[] = []
+
+  // Handle date-range filters specially (they use dateType + date parameters)
+  const dateRangeFields = filter.filterOptions.fields.filter(
+    (f: { type: string }) => f.type === 'date-range',
+  )
+
+  dateRangeFields.forEach(
+    (field: { key: string; label: string; type: string }) => {
+      const dateType = urlState.queryState.filters['dateType']
+      const date = urlState.queryState.filters['date']
+
+      if (dateType && date) {
+        const [start, end] = String(date).split(',')
+        activeFilters.push({
+          key: field.key,
+          label: field.label,
+          type: 'date-range',
+          dateType: String(dateType),
+          start: start || '',
+          end: end || '',
+        })
+      }
+    },
+  )
+
+  // Handle other filter types
   Object.entries(urlState.queryState.filters).forEach(([key, value]) => {
+    // Skip dateType and date as they're handled above
+    if (key === 'dateType' || key === 'date') return
+
     const field = filter.filterOptions.fields.find(
       (f: {
         key: string
@@ -85,28 +142,14 @@ export const FilterBar = React.memo(function FilterBar({
     )
     if (!field) return
 
-    if (field.type === 'date-range') {
-      // Handle date-range: expect object with dateType and date range
-      const dateRangeValue = value as { dateType: string; date: string }
-      if (dateRangeValue && dateRangeValue.dateType && dateRangeValue.date) {
-        const [start, end] = dateRangeValue.date.split(',')
-        activeFilters.push({
-          key,
-          label: field.label,
-          type: 'date-range',
-          dateType: dateRangeValue.dateType,
-          start: start || '',
-          end: end || '',
-        })
-      }
-    } else if (field.type === 'boolean') {
+    if (field.type === 'boolean') {
       activeFilters.push({
         key,
         label: field.label,
         type: 'boolean',
         bool: Boolean(value),
       })
-    } else {
+    } else if (field.type !== 'date-range') {
       activeFilters.push({
         key,
         label: field.label,
@@ -131,12 +174,13 @@ export const FilterBar = React.memo(function FilterBar({
       const dateRangeValue = value as
         | { dateType: string; startDate: string; endDate: string }
         | undefined
-      // Both dateType AND at least one date must be present
+      // dateType AND both From and To dates must be present
       return (
         dateRangeValue &&
         dateRangeValue.dateType &&
         dateRangeValue.dateType.trim() !== '' &&
-        (dateRangeValue.startDate?.trim() || dateRangeValue.endDate?.trim())
+        dateRangeValue.startDate?.trim() &&
+        dateRangeValue.endDate?.trim()
       )
     } else if (field.type === 'select') {
       return value !== undefined && value !== ''
@@ -163,14 +207,15 @@ export const FilterBar = React.memo(function FilterBar({
         dateRangeValue &&
         dateRangeValue.dateType &&
         dateRangeValue.dateType.trim() !== '' &&
-        (dateRangeValue.startDate?.trim() || dateRangeValue.endDate?.trim())
+        dateRangeValue.startDate?.trim() &&
+        dateRangeValue.endDate?.trim()
       ) {
         // Format: dateType=requestedAt & date=2025-09-30,2025-10-31
         const dateRange = `${dateRangeValue.startDate || ''},${dateRangeValue.endDate || ''}`
-        filter.updateFilter(fieldKey, {
-          dateType: dateRangeValue.dateType,
-          date: dateRange,
-        })
+
+        // Update both dateType and date as separate query parameters
+        filter.updateFilter('dateType', dateRangeValue.dateType)
+        filter.updateFilter('date', dateRange)
       }
     } else if (field.type === 'select') {
       if (value !== undefined && value !== '') {
@@ -185,7 +230,16 @@ export const FilterBar = React.memo(function FilterBar({
   }
 
   const clearFilter = (fieldKey: string) => {
-    filter.removeFilter(fieldKey)
+    const field = filter.filterOptions.fields.find((f) => f.key === fieldKey)
+
+    if (field?.type === 'date-range') {
+      // For date-range, remove both dateType and date parameters
+      filter.removeFilter('dateType')
+      filter.removeFilter('date')
+    } else {
+      filter.removeFilter(fieldKey)
+    }
+
     updateFieldValue(fieldKey, '')
   }
 
@@ -205,7 +259,11 @@ export const FilterBar = React.memo(function FilterBar({
     dateTypes?: Array<{ label: string; value: string }>
   }) => {
     const fieldKey = field.key as string
-    const isActive = urlState.queryState.filters[fieldKey] !== undefined
+    const isActive =
+      field.type === 'date-range'
+        ? urlState.queryState.filters['dateType'] !== undefined &&
+          urlState.queryState.filters['date'] !== undefined
+        : urlState.queryState.filters[fieldKey] !== undefined
     const currentValue = getFieldValue(fieldKey)
 
     const baseInputClass =
@@ -476,7 +534,11 @@ export const FilterBar = React.memo(function FilterBar({
                   <div key={field.key} className="relative">
                     {renderFilterField(field)}
                     {/* Clear individual filter button */}
-                    {urlState.queryState.filters[field.key] !== undefined && (
+                    {(field.type === 'date-range'
+                      ? urlState.queryState.filters['dateType'] !== undefined &&
+                        urlState.queryState.filters['date'] !== undefined
+                      : urlState.queryState.filters[field.key] !==
+                        undefined) && (
                       <WiseTableButton
                         onClick={() => clearFilter(field.key)}
                         variant="ghost"
