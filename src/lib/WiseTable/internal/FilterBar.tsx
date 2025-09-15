@@ -428,7 +428,8 @@ export const FilterBar = React.memo(function FilterBar({
           { label: '*', value: '*' },
           ...(field.dateTypes || []),
         ]
-        const hasDateType = dateRangeValue.dateType !== ''
+        const hasDateType =
+          !!dateRangeValue.dateType && dateRangeValue.dateType.trim() !== ''
         const hasDateRange = dateRangeValue.startDate || dateRangeValue.endDate
 
         return (
@@ -456,10 +457,7 @@ export const FilterBar = React.memo(function FilterBar({
                       dateType: String(newValue),
                     }
                     updateFieldValue(fieldKey, newDateRangeValue)
-                    if (
-                      newDateRangeValue.startDate &&
-                      newDateRangeValue.endDate
-                    ) {
+                    if (canApplyFilter(fieldKey, newDateRangeValue)) {
                       applyFilter(fieldKey, newDateRangeValue)
                     }
                   }
@@ -488,11 +486,9 @@ export const FilterBar = React.memo(function FilterBar({
                         startDate: e.target.value,
                       }
                       updateFieldValue(fieldKey, newDateRangeValue)
-                    }}
-                    onBlur={() => {
-                      // Only apply filter if both dateType and at least one date are present
-                      if (canApplyFilter(fieldKey)) {
-                        applyFilter(fieldKey)
+                      // If all required parts are ready, apply immediately
+                      if (canApplyFilter(fieldKey, newDateRangeValue)) {
+                        applyFilter(fieldKey, newDateRangeValue)
                       }
                     }}
                     disabled={!hasDateType}
@@ -519,11 +515,9 @@ export const FilterBar = React.memo(function FilterBar({
                         endDate: e.target.value,
                       }
                       updateFieldValue(fieldKey, newDateRangeValue)
-                    }}
-                    onBlur={() => {
-                      // Only apply filter if both dateType and at least one date are present
-                      if (canApplyFilter(fieldKey)) {
-                        applyFilter(fieldKey)
+                      // If all required parts are ready, apply immediately
+                      if (canApplyFilter(fieldKey, newDateRangeValue)) {
+                        applyFilter(fieldKey, newDateRangeValue)
                       }
                     }}
                     disabled={!hasDateType}
