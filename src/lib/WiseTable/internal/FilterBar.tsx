@@ -273,15 +273,22 @@ export const FilterBar = React.memo(function FilterBar({
         }
 
         const dateTypeOptions = field.dateTypes || []
+        const hasDateType = dateRangeValue.dateType !== ''
+        const hasDateRange = dateRangeValue.startDate || dateRangeValue.endDate
 
         return (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {field.label}
+              {hasDateType && hasDateRange && (
+                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full dark:bg-blue-700/30 dark:text-blue-200">
+                  Active
+                </span>
+              )}
             </label>
-            {/* Date Type and Date Range should be cohesive - no line break */}
-            <div className="grid grid-cols-3 gap-2">
-              {/* Date Type Selector */}
+
+            {/* Date Type Selector - Full width */}
+            <div>
               <SearchableSelect
                 options={dateTypeOptions}
                 value={dateRangeValue.dateType}
@@ -291,56 +298,113 @@ export const FilterBar = React.memo(function FilterBar({
                     dateType: String(newValue),
                   }
                   updateFieldValue(fieldKey, newDateRangeValue)
-                  // Don't apply filter until both dateType and date range are set
+                  // Apply filter if date range is already set
+                  if (
+                    newDateRangeValue.startDate ||
+                    newDateRangeValue.endDate
+                  ) {
+                    setTimeout(() => applyFilter(fieldKey), 0)
+                  }
                 }}
-                placeholder="Type"
+                placeholder="Select date type..."
                 searchable={true}
                 useBadge={false}
-                className={`min-w-0 ${isActive ? '!border-blue-500 !bg-blue-50 dark:!bg-blue-700/20' : ''}`}
-              />
-
-              {/* Start Date */}
-              <input
-                type="date"
-                value={dateRangeValue.startDate || ''}
-                onChange={(e) => {
-                  const newDateRangeValue = {
-                    ...dateRangeValue,
-                    startDate: e.target.value,
-                  }
-                  updateFieldValue(fieldKey, newDateRangeValue)
-                }}
-                onBlur={() => {
-                  // Only apply filter if dateType is also selected
-                  if (dateRangeValue.dateType) {
-                    applyFilter(fieldKey)
-                  }
-                }}
-                placeholder="From"
-                className={`${baseInputClass} ${activeInputClass}`}
-              />
-
-              {/* End Date */}
-              <input
-                type="date"
-                value={dateRangeValue.endDate || ''}
-                onChange={(e) => {
-                  const newDateRangeValue = {
-                    ...dateRangeValue,
-                    endDate: e.target.value,
-                  }
-                  updateFieldValue(fieldKey, newDateRangeValue)
-                }}
-                onBlur={() => {
-                  // Only apply filter if dateType is also selected
-                  if (dateRangeValue.dateType) {
-                    applyFilter(fieldKey)
-                  }
-                }}
-                placeholder="To"
-                className={`${baseInputClass} ${activeInputClass}`}
+                className={`w-full ${isActive ? '!border-blue-500 !bg-blue-50 dark:!bg-blue-700/20' : ''}`}
               />
             </div>
+
+            {/* Date Range Inputs - Side by side with visual connection */}
+            <div className="relative">
+              <div className="grid grid-cols-2 gap-3">
+                {/* Start Date */}
+                <div className="relative">
+                  <label className="block text-xs text-gray-500 mb-1 dark:text-gray-400">
+                    From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={dateRangeValue.startDate || ''}
+                    onChange={(e) => {
+                      const newDateRangeValue = {
+                        ...dateRangeValue,
+                        startDate: e.target.value,
+                      }
+                      updateFieldValue(fieldKey, newDateRangeValue)
+                    }}
+                    onBlur={() => {
+                      // Only apply filter if dateType is also selected
+                      if (dateRangeValue.dateType) {
+                        applyFilter(fieldKey)
+                      }
+                    }}
+                    disabled={!hasDateType}
+                    className={`${baseInputClass} ${activeInputClass} ${
+                      !hasDateType ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    title={
+                      !hasDateType ? 'Please select a date type first' : ''
+                    }
+                  />
+                </div>
+
+                {/* Visual separator */}
+                <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+                  <div className="bg-white dark:bg-gray-800 px-2">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 8l4 4m0 0l-4 4m4-4H3"
+                      />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* End Date */}
+                <div className="relative">
+                  <label className="block text-xs text-gray-500 mb-1 dark:text-gray-400">
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={dateRangeValue.endDate || ''}
+                    onChange={(e) => {
+                      const newDateRangeValue = {
+                        ...dateRangeValue,
+                        endDate: e.target.value,
+                      }
+                      updateFieldValue(fieldKey, newDateRangeValue)
+                    }}
+                    onBlur={() => {
+                      // Only apply filter if dateType is also selected
+                      if (dateRangeValue.dateType) {
+                        applyFilter(fieldKey)
+                      }
+                    }}
+                    disabled={!hasDateType}
+                    className={`${baseInputClass} ${activeInputClass} ${
+                      !hasDateType ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    title={
+                      !hasDateType ? 'Please select a date type first' : ''
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Helper text */}
+            {!hasDateType && (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Please select a date type to enable date range selection
+              </p>
+            )}
           </div>
         )
       }
