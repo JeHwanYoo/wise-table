@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useFilter } from '../hooks/useFilter'
 import { useURLState } from '../hooks/useURLState'
 import { useEditingContext } from '../hooks/useWiseTable'
-import { CloseIcon, SearchBox, SearchableSelect, WiseTableButton } from '../ui'
+import { SearchBox, SearchableSelect, WiseTableButton } from '../ui'
 
 // Active filter display type
 type ActiveFilter = {
@@ -434,17 +434,11 @@ export const FilterBar = React.memo(function FilterBar({
         ]
         const hasDateType =
           !!dateRangeValue.dateType && dateRangeValue.dateType.trim() !== ''
-        const hasDateRange = dateRangeValue.startDate || dateRangeValue.endDate
 
         return (
           <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {field.label}
-              {hasDateType && hasDateRange && (
-                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full dark:bg-blue-700/30 dark:text-blue-200">
-                  Active
-                </span>
-              )}
             </label>
 
             {/* Date Type Selector - Full width */}
@@ -602,18 +596,49 @@ export const FilterBar = React.memo(function FilterBar({
         {filter.filterOptions.fields.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Filters ({activeFilters.length} active)
-              </h3>
-              {activeFilters.length > 0 && (
-                <WiseTableButton
-                  onClick={filter.clearAllFilters}
-                  variant="secondary"
-                  size="sm"
-                >
-                  Clear All Filters
-                </WiseTableButton>
-              )}
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {activeFilters.length === 0 ? (
+                    'Filters'
+                  ) : (
+                    <span>
+                      Filters (
+                      {activeFilters
+                        .map((filter) => {
+                          let displayValue = ''
+
+                          if (filter.type === 'boolean') {
+                            displayValue = filter.bool ? 'True' : 'False'
+                          } else if (filter.type === 'date-range') {
+                            const parts = []
+                            if (filter.dateType) parts.push(filter.dateType)
+                            if (filter.start || filter.end) {
+                              parts.push(
+                                `${filter.start || '?'} ~ ${filter.end || '?'}`,
+                              )
+                            }
+                            displayValue = parts.join(': ')
+                          } else {
+                            displayValue = String(filter.value || '')
+                          }
+
+                          return `${filter.label}: ${displayValue}`
+                        })
+                        .join(', ')}
+                      )
+                    </span>
+                  )}
+                </h3>
+                {activeFilters.length > 0 && (
+                  <WiseTableButton
+                    onClick={filter.clearAllFilters}
+                    variant="secondary"
+                    size="xs"
+                  >
+                    × Clear Filters
+                  </WiseTableButton>
+                )}
+              </div>
             </div>
 
             {/* Responsive Grid Layout */}
@@ -626,25 +651,7 @@ export const FilterBar = React.memo(function FilterBar({
                   placeholder?: string
                   dateTypes?: Array<{ label: string; value: string }>
                 }) => (
-                  <div key={field.key} className="relative">
-                    {renderFilterField(field)}
-                    {/* Clear individual filter button */}
-                    {(field.type === 'date-range'
-                      ? urlState.queryState.filters['dateType'] !== undefined &&
-                        urlState.queryState.filters['date'] !== undefined
-                      : urlState.queryState.filters[field.key] !==
-                        undefined) && (
-                      <WiseTableButton
-                        onClick={() => clearFilter(field.key)}
-                        variant="ghost"
-                        size="xs"
-                        className="absolute top-0 right-0 !p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                        aria-label={`Clear ${field.label} filter`}
-                      >
-                        <CloseIcon size="sm" />
-                      </WiseTableButton>
-                    )}
-                  </div>
+                  <div key={field.key}>{renderFilterField(field)}</div>
                 ),
               )}
             </div>
