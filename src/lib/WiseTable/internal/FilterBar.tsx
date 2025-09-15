@@ -131,9 +131,11 @@ export const FilterBar = React.memo(function FilterBar({
       const dateRangeValue = value as
         | { dateType: string; startDate: string; endDate: string }
         | undefined
+      // Both dateType AND at least one date must be present
       return (
         dateRangeValue &&
         dateRangeValue.dateType &&
+        dateRangeValue.dateType.trim() !== '' &&
         (dateRangeValue.startDate?.trim() || dateRangeValue.endDate?.trim())
       )
     } else if (field.type === 'select') {
@@ -160,6 +162,7 @@ export const FilterBar = React.memo(function FilterBar({
       if (
         dateRangeValue &&
         dateRangeValue.dateType &&
+        dateRangeValue.dateType.trim() !== '' &&
         (dateRangeValue.startDate?.trim() || dateRangeValue.endDate?.trim())
       ) {
         // Format: dateType=requestedAt & date=2025-09-30,2025-10-31
@@ -332,8 +335,8 @@ export const FilterBar = React.memo(function FilterBar({
                       updateFieldValue(fieldKey, newDateRangeValue)
                     }}
                     onBlur={() => {
-                      // Only apply filter if dateType is also selected
-                      if (dateRangeValue.dateType) {
+                      // Only apply filter if both dateType and at least one date are present
+                      if (canApplyFilter(fieldKey)) {
                         applyFilter(fieldKey)
                       }
                     }}
@@ -345,25 +348,6 @@ export const FilterBar = React.memo(function FilterBar({
                       !hasDateType ? 'Please select a date type first' : ''
                     }
                   />
-                </div>
-
-                {/* Visual separator - positioned at input level */}
-                <div className="absolute left-1/2 top-7 transform -translate-x-1/2 z-10">
-                  <div className="bg-white dark:bg-gray-800 px-1">
-                    <svg
-                      className="w-4 h-4 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17 8l4 4m0 0l-4 4m4-4H3"
-                      />
-                    </svg>
-                  </div>
                 </div>
 
                 {/* End Date */}
@@ -382,8 +366,8 @@ export const FilterBar = React.memo(function FilterBar({
                       updateFieldValue(fieldKey, newDateRangeValue)
                     }}
                     onBlur={() => {
-                      // Only apply filter if dateType is also selected
-                      if (dateRangeValue.dateType) {
+                      // Only apply filter if both dateType and at least one date are present
+                      if (canApplyFilter(fieldKey)) {
                         applyFilter(fieldKey)
                       }
                     }}
