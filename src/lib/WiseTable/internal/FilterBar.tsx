@@ -27,23 +27,32 @@ export const FilterBar = React.memo(function FilterBar({
   const filter = useFilter()
   const urlState = useURLState()
 
-  const [selectedKey, setSelectedKey] = useState<string>('')
-  const [value, setValue] = useState<string>('')
-  const [selectValue, setSelectValue] = useState<string | number | undefined>(
-    undefined,
-  )
-  const [boolValue, setBoolValue] = useState<boolean>(false)
-  const [dateStart, setDateStart] = useState<string>('')
-  const [dateEnd, setDateEnd] = useState<string>('')
+  // Individual states for each field (for grid layout)
+  const [fieldValues, setFieldValues] = useState<Record<string, unknown>>({})
 
-  // Reset all input states when selectedKey changes
+  // Initialize field values from current URL state filters
   useEffect(() => {
-    setValue('')
-    setSelectValue(undefined)
-    setBoolValue(false)
-    setDateStart('')
-    setDateEnd('')
-  }, [selectedKey])
+    const initialValues: Record<string, unknown> = {}
+    Object.entries(urlState.queryState.filters).forEach(([key, value]) => {
+      initialValues[key] = value
+    })
+    setFieldValues(initialValues)
+  }, [urlState.queryState.filters])
+
+  // Update field value for specific field
+  const updateFieldValue = (fieldKey: string, value: unknown) => {
+    setFieldValues((prev) => ({ ...prev, [fieldKey]: value }))
+  }
+
+  // Get current value for a specific field
+  const getFieldValue = (fieldKey: string, defaultValue: unknown = '') => {
+    // First check URL state, then local state, then default
+    return (
+      urlState.queryState.filters[fieldKey] ??
+      fieldValues[fieldKey] ??
+      defaultValue
+    )
+  }
 
   // Pre-compute all field options to ensure hooks are called unconditionally
   const fieldOptionsResults: Record<
@@ -103,187 +112,208 @@ export const FilterBar = React.memo(function FilterBar({
 
   if (!filter.enableFilters) return null
 
-  // Check if current filter input has valid value
-  const canAddFilter = () => {
-    const field = filter.filterOptions.fields.find((f) => f.key === selectedKey)
-    if (!field || !selectedKey) return false
+  // Check if field has valid value for filtering
+  const canApplyFilter = (fieldKey: string) => {
+    const field = filter.filterOptions.fields.find((f) => f.key === fieldKey)
+    if (!field) return false
+
+    const value = getFieldValue(fieldKey)
 
     if (field.type === 'boolean') {
       return true // Boolean always has a value
     } else if (field.type === 'date') {
-      return dateStart.trim() !== '' || dateEnd.trim() !== ''
+      const dateRange = value as [string, string] | undefined
+      return dateRange && (dateRange[0]?.trim() || dateRange[1]?.trim())
     } else if (field.type === 'select') {
-      return selectValue !== undefined && selectValue !== ''
+      return value !== undefined && value !== ''
     } else {
-      return value.trim() !== ''
+      return typeof value === 'string' && value.trim() !== ''
     }
   }
 
-  const handleAddFilter = () => {
-    const field = filter.filterOptions.fields.find((f) => f.key === selectedKey)
-    if (!field || !selectedKey) return
+  const applyFilter = (fieldKey: string) => {
+    const field = filter.filterOptions.fields.find((f) => f.key === fieldKey)
+    if (!field || !canApplyFilter(fieldKey)) return
+
+    const value = getFieldValue(fieldKey)
 
     if (field.type === 'boolean') {
-      filter.updateFilter(selectedKey, boolValue)
+      filter.updateFilter(fieldKey, Boolean(value))
     } else if (field.type === 'date') {
-      // Store date as array: always [startDate, endDate] format
-      const dateRange = [dateStart || '', dateEnd || '']
-      // Only update if at least one date is provided
-      if (dateRange.some((date) => date !== '')) {
-        filter.updateFilter(selectedKey, dateRange)
+      const dateRange = value as [string, string]
+      if (dateRange && dateRange.some((date) => date && date.trim() !== '')) {
+        filter.updateFilter(fieldKey, dateRange)
       }
     } else if (field.type === 'select') {
-      if (selectValue !== undefined && selectValue !== '') {
-        filter.updateFilter(selectedKey, selectValue)
+      if (value !== undefined && value !== '') {
+        filter.updateFilter(fieldKey, value)
       }
     } else {
-      // For select and other types, ensure we have a valid non-empty value
-      const trimmedValue = value.trim()
-      if (trimmedValue && trimmedValue !== '') {
-        filter.updateFilter(selectedKey, trimmedValue)
+      const trimmedValue = String(value).trim()
+      if (trimmedValue !== '') {
+        filter.updateFilter(fieldKey, trimmedValue)
       }
     }
-
-    // Reset form
-    setValue('')
-    setSelectValue(undefined)
-    setBoolValue(false)
-    setDateStart('')
-    setDateEnd('')
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const clearFilter = (fieldKey: string) => {
+    filter.removeFilter(fieldKey)
+    updateFieldValue(fieldKey, '')
+  }
+
+  const handleKeyDown = (fieldKey: string) => (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault()
-      handleAddFilter()
+      applyFilter(fieldKey)
     }
   }
 
-  const removeFilter = (filterToRemove: ActiveFilter) => {
-    // For all filter types including date arrays, just remove the key
-    filter.removeFilter(filterToRemove.key)
-  }
+  // Render individual filter field
+  const renderFilterField = (field: {
+    key: string
+    label: string
+    type: string
+    placeholder?: string
+  }) => {
+    const fieldKey = field.key as string
+    const isActive = urlState.queryState.filters[fieldKey] !== undefined
+    const currentValue = getFieldValue(fieldKey)
 
-  const getDisplayValue = (activeFilter: ActiveFilter): string => {
-    if (activeFilter.type === 'boolean') {
-      return activeFilter.bool ? 'True' : 'False'
-    }
-    if (activeFilter.type === 'date') {
-      const parts = []
-      if (activeFilter.start) parts.push(`From: ${activeFilter.start}`)
-      if (activeFilter.end) parts.push(`To: ${activeFilter.end}`)
-      return parts.join(', ')
-    }
-    if (activeFilter.type === 'select') {
-      // Find the corresponding field to get options
-      const field = filter.filterOptions.fields.find(
-        (f) => f.key === activeFilter.key,
-      )
-      if (field) {
-        // Handle static array and hook-based options
-        let options: Array<{
-          label: string
-          value: string | number | boolean
-        }> = []
+    const baseInputClass =
+      'w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700'
+    const activeInputClass = isActive
+      ? 'border-blue-500 bg-blue-50 dark:bg-blue-700/20 dark:border-blue-400'
+      : 'border-gray-300'
 
-        // Get pre-computed options from fieldOptionsResults
-        options = fieldOptionsResults[field.key as string] || []
-
-        const option = options.find(
-          (opt: { label: string; value: string | number | boolean }) =>
-            String(opt.value) === String(activeFilter.value),
-        )
-        return option?.label || String(activeFilter.value || '')
-      }
-    }
-    return activeFilter.value || ''
-  }
-
-  const selectedField = filter.filterOptions.fields.find(
-    (f) => f.key === selectedKey,
-  )
-
-  const renderFilterInput = () => {
-    if (!selectedField) return null
-
-    switch (selectedField.type) {
+    switch (field.type) {
       case 'boolean':
         return (
-          <select
-            value={boolValue ? 'true' : 'false'}
-            onChange={(e) => setBoolValue(e.target.value === 'true')}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
-          >
-            <option value="true">True</option>
-            <option value="false">False</option>
-          </select>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {field.label}
+            </label>
+            <select
+              value={currentValue ? 'true' : 'false'}
+              onChange={(e) => {
+                const newValue = e.target.value === 'true'
+                updateFieldValue(fieldKey, newValue)
+                setTimeout(() => applyFilter(fieldKey), 0)
+              }}
+              className={`${baseInputClass} ${activeInputClass}`}
+            >
+              <option value="true">True</option>
+              <option value="false">False</option>
+            </select>
+          </div>
         )
 
       case 'select': {
-        // Get pre-computed options from fieldOptionsResults
-        const options = fieldOptionsResults[selectedField.key as string] || []
-
-        // Convert to SearchableSelect format
+        const options = fieldOptionsResults[fieldKey] || []
         const searchableOptions = options.map((option) => ({
           label: option.label,
-          value: option.value as string | number, // SearchableSelect expects string | number
+          value: option.value as string | number,
         }))
 
         return (
-          <SearchableSelect
-            options={searchableOptions}
-            value={selectValue}
-            onChange={(newValue) => setSelectValue(newValue as string | number)}
-            placeholder="Select..."
-            searchable={true}
-            useBadge={false}
-            className="min-w-0 max-w-xs"
-          />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {field.label}
+            </label>
+            <SearchableSelect
+              options={searchableOptions}
+              value={currentValue as string | number}
+              onChange={(newValue) => {
+                updateFieldValue(fieldKey, newValue)
+                setTimeout(() => applyFilter(fieldKey), 0)
+              }}
+              placeholder={`Select ${field.label.toLowerCase()}...`}
+              searchable={true}
+              useBadge={false}
+              className={`min-w-0 ${isActive ? '!border-blue-500 !bg-blue-50 dark:!bg-blue-700/20' : ''}`}
+            />
+          </div>
         )
       }
 
-      case 'date':
+      case 'date': {
+        const dateRange = (currentValue as [string, string]) || ['', '']
         return (
-          <div className="flex space-x-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {field.label}
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="date"
+                value={dateRange[0] || ''}
+                onChange={(e) => {
+                  const newRange: [string, string] = [
+                    e.target.value,
+                    dateRange[1] || '',
+                  ]
+                  updateFieldValue(fieldKey, newRange)
+                }}
+                onBlur={() => applyFilter(fieldKey)}
+                placeholder="From"
+                className={`${baseInputClass} ${activeInputClass}`}
+              />
+              <input
+                type="date"
+                value={dateRange[1] || ''}
+                onChange={(e) => {
+                  const newRange: [string, string] = [
+                    dateRange[0] || '',
+                    e.target.value,
+                  ]
+                  updateFieldValue(fieldKey, newRange)
+                }}
+                onBlur={() => applyFilter(fieldKey)}
+                placeholder="To"
+                className={`${baseInputClass} ${activeInputClass}`}
+              />
+            </div>
+          </div>
+        )
+      }
+
+      case 'number':
+        return (
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {field.label}
+            </label>
             <input
-              type="date"
-              value={dateStart}
-              onChange={(e) => setDateStart(e.target.value)}
-              placeholder="From"
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
-            />
-            <input
-              type="date"
-              value={dateEnd}
-              onChange={(e) => setDateEnd(e.target.value)}
-              placeholder="To"
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+              type="number"
+              value={String(currentValue || '')}
+              onChange={(e) => updateFieldValue(fieldKey, e.target.value)}
+              onKeyDown={handleKeyDown(fieldKey)}
+              onBlur={() => applyFilter(fieldKey)}
+              placeholder={
+                field.placeholder || `Enter ${field.label.toLowerCase()}...`
+              }
+              className={`${baseInputClass} ${activeInputClass}`}
             />
           </div>
         )
 
-      case 'number':
-        return (
-          <input
-            type="number"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={selectedField.placeholder || 'Enter number...'}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
-          />
-        )
-
       default:
         return (
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={selectedField.placeholder || 'Enter value...'}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
-          />
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {field.label}
+            </label>
+            <input
+              type="text"
+              value={String(currentValue || '')}
+              onChange={(e) => updateFieldValue(fieldKey, e.target.value)}
+              onKeyDown={handleKeyDown(fieldKey)}
+              onBlur={() => applyFilter(fieldKey)}
+              placeholder={
+                field.placeholder || `Enter ${field.label.toLowerCase()}...`
+              }
+              className={`${baseInputClass} ${activeInputClass}`}
+            />
+          </div>
         )
     }
   }
@@ -292,78 +322,68 @@ export const FilterBar = React.memo(function FilterBar({
     <div
       className={`p-4 bg-gray-50 border-b border-gray-200 dark:bg-gray-800 dark:border-gray-800 ${className}`}
     >
-      <div className="flex flex-col space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {filter.useSearch && (
+      <div className="space-y-4">
+        {/* Search Box */}
+        {filter.useSearch && (
+          <div className="w-full">
             <SearchBox
               value={filter.searchValue}
               onChange={filter.updateSearch}
               placeholder={filter.searchPlaceholder}
-              className="flex-1 min-w-64"
+              className="w-full"
             />
-          )}
+          </div>
+        )}
 
-          {filter.filterOptions.fields.length > 0 && (
-            <>
-              <select
-                value={selectedKey}
-                onChange={(e) => setSelectedKey(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-32 bg-white text-gray-800 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
-              >
-                <option value="">Select field...</option>
-                {filter.filterOptions.fields.map(
-                  (field: { key: string; label: string }) => (
-                    <option key={field.key} value={field.key}>
-                      {field.label}
-                    </option>
-                  ),
-                )}
-              </select>
-
-              {renderFilterInput()}
-
-              <WiseTableButton
-                onClick={handleAddFilter}
-                disabled={!selectedKey || !canAddFilter()}
-              >
-                Add Filter
-              </WiseTableButton>
-
+        {/* Filter Grid */}
+        {filter.filterOptions.fields.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Filters ({activeFilters.length} active)
+              </h3>
               {activeFilters.length > 0 && (
                 <WiseTableButton
                   onClick={filter.clearAllFilters}
                   variant="secondary"
+                  size="sm"
                 >
-                  Clear All
+                  Clear All Filters
                 </WiseTableButton>
               )}
-            </>
-          )}
-        </div>
+            </div>
 
-        {activeFilters.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {activeFilters.map((activeFilter, index) => (
-              <div
-                key={`${activeFilter.key}-${index}`}
-                className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm dark:bg-blue-700/30 dark:text-blue-200"
-              >
-                <span className="font-medium">{activeFilter.label}:</span>
-                <span className="ml-1">{getDisplayValue(activeFilter)}</span>
-                <WiseTableButton
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => removeFilter(activeFilter)}
-                  aria-label={`Remove ${activeFilter.label} filter`}
-                  className="ml-1 !p-0.5 text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200"
-                >
-                  <CloseIcon size="sm" />
-                </WiseTableButton>
-              </div>
-            ))}
+            {/* Responsive Grid Layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filter.filterOptions.fields.map(
+                (field: {
+                  key: string
+                  label: string
+                  type: string
+                  placeholder?: string
+                }) => (
+                  <div key={field.key} className="relative">
+                    {renderFilterField(field)}
+                    {/* Clear individual filter button */}
+                    {urlState.queryState.filters[field.key] !== undefined && (
+                      <WiseTableButton
+                        onClick={() => clearFilter(field.key)}
+                        variant="ghost"
+                        size="xs"
+                        className="absolute top-0 right-0 !p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                        aria-label={`Clear ${field.label} filter`}
+                      >
+                        <CloseIcon size="sm" />
+                      </WiseTableButton>
+                    )}
+                  </div>
+                ),
+              )}
+            </div>
           </div>
         )}
 
+        {/* Unsaved Changes Warning */}
         {hasUnsavedChanges() && (
           <div className="flex items-center gap-2 px-3 py-2 bg-yellow-100 border border-yellow-300 rounded-md text-sm text-yellow-800 dark:bg-yellow-700/20 dark:border-yellow-600 dark:text-yellow-300">
             <svg
