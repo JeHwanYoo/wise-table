@@ -260,11 +260,11 @@ export const FilterBar = React.memo(function FilterBar({
     }
   }
 
-  const applyFilter = (fieldKey: string) => {
+  const applyFilter = (fieldKey: string, explicitValue?: unknown) => {
     const field = filter.filterOptions.fields.find((f) => f.key === fieldKey)
     if (!field || !canApplyFilter(fieldKey)) return
 
-    const value = getFieldValue(fieldKey)
+    const value = explicitValue ?? getFieldValue(fieldKey)
 
     if (field.type === 'boolean') {
       filter.updateFilter(fieldKey, Boolean(value))
@@ -365,7 +365,7 @@ export const FilterBar = React.memo(function FilterBar({
                 } else {
                   const newValue = e.target.value === 'true'
                   updateFieldValue(fieldKey, newValue)
-                  setTimeout(() => applyFilter(fieldKey), 0)
+                  applyFilter(fieldKey, newValue)
                 }
               }}
               className={`${baseInputClass} ${activeInputClass}`}
@@ -401,8 +401,9 @@ export const FilterBar = React.memo(function FilterBar({
                   // Clear the filter
                   clearFilter(fieldKey)
                 } else {
+                  // Apply immediately with the chosen value to avoid stale reads
                   updateFieldValue(fieldKey, newValue)
-                  setTimeout(() => applyFilter(fieldKey), 0)
+                  applyFilter(fieldKey, newValue)
                 }
               }}
               placeholder={`Select ${field.label.toLowerCase()}...`}
@@ -464,7 +465,7 @@ export const FilterBar = React.memo(function FilterBar({
                       newDateRangeValue.startDate ||
                       newDateRangeValue.endDate
                     ) {
-                      setTimeout(() => applyFilter(fieldKey), 0)
+                      applyFilter(fieldKey, newDateRangeValue)
                     }
                   }
                 }}
