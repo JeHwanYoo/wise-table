@@ -146,9 +146,14 @@ export function EditableCell<T>({
           newValue = value
         }
       }
-    } else if (typeof value === 'number') {
-      const numValue = parseFloat(inputValue)
-      newValue = (isNaN(numValue) ? value : numValue) as T[keyof T]
+    } else if (column.type === 'number' || typeof value === 'number') {
+      if (inputValue.trim() === '') {
+        // For empty number input, use null for nullable schema compatibility
+        newValue = null as T[keyof T]
+      } else {
+        const numValue = parseFloat(inputValue)
+        newValue = (isNaN(numValue) ? value : numValue) as T[keyof T]
+      }
     } else if (typeof value === 'boolean') {
       newValue = (inputValue === 'true') as T[keyof T]
     } else {
