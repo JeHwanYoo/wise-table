@@ -34,11 +34,57 @@ export const FilterBar = React.memo(function FilterBar({
   // Initialize field values from current URL state filters
   useEffect(() => {
     const initialValues: Record<string, unknown> = {}
-    Object.entries(urlState.queryState.filters).forEach(([key, value]) => {
-      initialValues[key] = value
+
+    // Handle date-range fields specially
+    const dateRangeFields = filter.filterOptions.fields.filter(
+      (f: { type: string }) => f.type === 'date-range',
+    )
+
+    dateRangeFields.forEach((field: { key: string }) => {
+      const dateType = urlState.queryState.filters['dateType']
+      const date = urlState.queryState.filters['date']
+
+      if (dateType && date) {
+        const [startDate, endDate] = String(date).split(',')
+        initialValues[field.key] = {
+          dateType: String(dateType),
+          startDate: startDate || '',
+          endDate: endDate || '',
+        }
+      }
     })
+
+    // Handle other field types
+    Object.entries(urlState.queryState.filters).forEach(([key, value]) => {
+      // Skip dateType and date as they're handled above
+      if (key === 'dateType' || key === 'date') return
+
+      const field = filter.filterOptions.fields.find(
+        (f: { key: string }) => f.key === key,
+      )
+      if (field && field.type !== 'date-range') {
+        // For select fields, ensure proper type conversion
+        if (field.type === 'select') {
+          // Try to convert to number if the value looks like a number
+          const numValue = Number(value)
+          if (!isNaN(numValue) && String(numValue) === String(value)) {
+            initialValues[key] = numValue
+          } else {
+            initialValues[key] = String(value)
+          }
+        } else if (field.type === 'boolean') {
+          initialValues[key] = value === 'true' || value === true
+        } else if (field.type === 'number') {
+          const numValue = Number(value)
+          initialValues[key] = isNaN(numValue) ? value : numValue
+        } else {
+          initialValues[key] = value
+        }
+      }
+    })
+
     setFieldValues(initialValues)
-  }, [urlState.queryState.filters])
+  }, [urlState.queryState.filters, filter.filterOptions.fields])
 
   // Update field value for specific field
   const updateFieldValue = (fieldKey: string, value: unknown) => {
@@ -65,22 +111,45 @@ export const FilterBar = React.memo(function FilterBar({
         }
       }
 
-      // Return from local state if exists
-      return (
-        fieldValues[fieldKey] ?? {
-          dateType: '',
-          startDate: '',
-          endDate: '',
-        }
-      )
+      // Return from local state if exists, or check if we have partial URL state
+      const localValue = fieldValues[fieldKey] as
+        | { dateType: string; startDate: string; endDate: string }
+        | undefined
+      if (localValue) {
+        return localValue
+      }
+
+      // Default empty state
+      return {
+        dateType: '',
+        startDate: '',
+        endDate: '',
+      }
     }
 
-    // For other field types, use normal lookup
-    return (
-      urlState.queryState.filters[fieldKey] ??
-      fieldValues[fieldKey] ??
-      defaultValue
-    )
+    // For other field types, use normal lookup with proper type conversion
+    const urlValue = urlState.queryState.filters[fieldKey]
+    const localValue = fieldValues[fieldKey]
+
+    if (urlValue !== undefined) {
+      // Apply type conversion for URL values
+      if (field?.type === 'select') {
+        // Try to convert to number if the value looks like a number
+        const numValue = Number(urlValue)
+        if (!isNaN(numValue) && String(numValue) === String(urlValue)) {
+          return numValue
+        }
+        return String(urlValue)
+      } else if (field?.type === 'boolean') {
+        return urlValue === 'true' || urlValue === true
+      } else if (field?.type === 'number') {
+        const numValue = Number(urlValue)
+        return isNaN(numValue) ? urlValue : numValue
+      }
+      return urlValue
+    }
+
+    return localValue ?? defaultValue
   }
 
   // Pre-compute all field options to ensure hooks are called unconditionally
@@ -280,14 +349,26 @@ export const FilterBar = React.memo(function FilterBar({
               {field.label}
             </label>
             <select
-              value={currentValue ? 'true' : 'false'}
+              value={
+                currentValue === undefined || currentValue === null
+                  ? '*'
+                  : currentValue
+                    ? 'true'
+                    : 'false'
+              }
               onChange={(e) => {
-                const newValue = e.target.value === 'true'
-                updateFieldValue(fieldKey, newValue)
-                setTimeout(() => applyFilter(fieldKey), 0)
+                if (e.target.value === '*') {
+                  // Clear the filter
+                  clearFilter(fieldKey)
+                } else {
+                  const newValue = e.target.value === 'true'
+                  updateFieldValue(fieldKey, newValue)
+                  setTimeout(() => applyFilter(fieldKey), 0)
+                }
               }}
               className={`${baseInputClass} ${activeInputClass}`}
             >
+              <option value="*">*</option>
               <option value="true">True</option>
               <option value="false">False</option>
             </select>
@@ -296,10 +377,14 @@ export const FilterBar = React.memo(function FilterBar({
 
       case 'select': {
         const options = fieldOptionsResults[fieldKey] || []
-        const searchableOptions = options.map((option) => ({
-          label: option.label,
-          value: option.value as string | number,
-        }))
+        const searchableOptions = [
+          // Add clear option at the beginning
+          { label: '*', value: '*' },
+          ...options.map((option) => ({
+            label: option.label,
+            value: option.value as string | number,
+          })),
+        ]
 
         return (
           <div className="space-y-2">
@@ -310,8 +395,13 @@ export const FilterBar = React.memo(function FilterBar({
               options={searchableOptions}
               value={currentValue as string | number}
               onChange={(newValue) => {
-                updateFieldValue(fieldKey, newValue)
-                setTimeout(() => applyFilter(fieldKey), 0)
+                if (newValue === '*') {
+                  // Clear the filter
+                  clearFilter(fieldKey)
+                } else {
+                  updateFieldValue(fieldKey, newValue)
+                  setTimeout(() => applyFilter(fieldKey), 0)
+                }
               }}
               placeholder={`Select ${field.label.toLowerCase()}...`}
               searchable={true}
@@ -333,7 +423,11 @@ export const FilterBar = React.memo(function FilterBar({
           endDate: '',
         }
 
-        const dateTypeOptions = field.dateTypes || []
+        const dateTypeOptions = [
+          // Add clear option at the beginning
+          { label: '*', value: '*' },
+          ...(field.dateTypes || []),
+        ]
         const hasDateType = dateRangeValue.dateType !== ''
         const hasDateRange = dateRangeValue.startDate || dateRangeValue.endDate
 
@@ -354,17 +448,22 @@ export const FilterBar = React.memo(function FilterBar({
                 options={dateTypeOptions}
                 value={dateRangeValue.dateType}
                 onChange={(newValue) => {
-                  const newDateRangeValue = {
-                    ...dateRangeValue,
-                    dateType: String(newValue),
-                  }
-                  updateFieldValue(fieldKey, newDateRangeValue)
-                  // Apply filter if date range is already set
-                  if (
-                    newDateRangeValue.startDate ||
-                    newDateRangeValue.endDate
-                  ) {
-                    setTimeout(() => applyFilter(fieldKey), 0)
+                  if (newValue === '*') {
+                    // Clear the entire date-range filter
+                    clearFilter(fieldKey)
+                  } else {
+                    const newDateRangeValue = {
+                      ...dateRangeValue,
+                      dateType: String(newValue),
+                    }
+                    updateFieldValue(fieldKey, newDateRangeValue)
+                    // Apply filter if date range is already set
+                    if (
+                      newDateRangeValue.startDate ||
+                      newDateRangeValue.endDate
+                    ) {
+                      setTimeout(() => applyFilter(fieldKey), 0)
+                    }
                   }
                 }}
                 placeholder="Select date type..."
