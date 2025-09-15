@@ -199,7 +199,7 @@ export const FilterBar = React.memo(function FilterBar({
     label: string
     type: string
     placeholder?: string
-    dateTypes?: string[]
+    dateTypes?: Array<{ label: string; value: string }>
   }) => {
     const fieldKey = field.key as string
     const isActive = urlState.queryState.filters[fieldKey] !== undefined
@@ -272,11 +272,7 @@ export const FilterBar = React.memo(function FilterBar({
           endDate: '',
         }
 
-        const dateTypeOptions =
-          field.dateTypes?.map((dateType) => ({
-            value: dateType,
-            label: dateType,
-          })) || []
+        const dateTypeOptions = field.dateTypes || []
 
         return (
           <div className="space-y-2">
@@ -434,7 +430,7 @@ export const FilterBar = React.memo(function FilterBar({
                   label: string
                   type: string
                   placeholder?: string
-                  dateTypes?: string[]
+                  dateTypes?: Array<{ label: string; value: string }>
                 }) => (
                   <div key={field.key} className="relative">
                     {renderFilterField(field)}

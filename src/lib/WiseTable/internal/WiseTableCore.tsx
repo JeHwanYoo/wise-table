@@ -67,8 +67,8 @@ export interface FilterField<TQueryDTO = Record<string, unknown>> {
   // Hook-based options that will be called in React component context
   useOptions?: () => Array<{ label: string; value: string | number | boolean }>
   placeholder?: string
-  // For date-range type: available date types
-  dateTypes?: string[]
+  // For date-range type: available date types for dropdown
+  dateTypes?: Array<{ label: string; value: string }>
 }
 
 export type FilterParams<TQueryDTO = Record<string, unknown>> =
