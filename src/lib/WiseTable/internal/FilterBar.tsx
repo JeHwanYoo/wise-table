@@ -596,47 +596,65 @@ export const FilterBar = React.memo(function FilterBar({
         {filter.filterOptions.fields.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {activeFilters.length === 0 ? (
-                    'Filters'
-                  ) : (
-                    <span>
-                      Filters (
-                      {activeFilters
-                        .map((filter) => {
-                          let displayValue = ''
-
-                          if (filter.type === 'boolean') {
-                            displayValue = filter.bool ? 'True' : 'False'
-                          } else if (filter.type === 'date-range') {
-                            const parts = []
-                            if (filter.dateType) parts.push(filter.dateType)
-                            if (filter.start || filter.end) {
-                              parts.push(
-                                `${filter.start || '?'} ~ ${filter.end || '?'}`,
-                              )
-                            }
-                            displayValue = parts.join(': ')
-                          } else {
-                            displayValue = String(filter.value || '')
-                          }
-
-                          return `${filter.label}: ${displayValue}`
-                        })
-                        .join(', ')}
-                      )
-                    </span>
-                  )}
+                  Filters
                 </h3>
                 {activeFilters.length > 0 && (
-                  <WiseTableButton
-                    onClick={filter.clearAllFilters}
-                    variant="secondary"
-                    size="xs"
-                  >
-                    × Clear Filters
-                  </WiseTableButton>
+                  <>
+                    <div className="flex flex-wrap gap-1">
+                      {activeFilters.map((activeFilter, index) => {
+                        let displayValue = ''
+
+                        if (activeFilter.type === 'boolean') {
+                          displayValue = activeFilter.bool ? 'True' : 'False'
+                        } else if (activeFilter.type === 'date-range') {
+                          // Find the dateType label from field options
+                          const field = filter.filterOptions.fields.find(
+                            (f) => f.key === activeFilter.key,
+                          )
+                          const dateTypeOption = field?.dateTypes?.find(
+                            (dt) => dt.value === activeFilter.dateType,
+                          )
+                          const dateTypeLabel =
+                            dateTypeOption?.label || activeFilter.dateType
+
+                          displayValue = `${dateTypeLabel}: ${activeFilter.start || '?'} ~ ${activeFilter.end || '?'}`
+                        } else if (activeFilter.type === 'select') {
+                          // Find the option label from field options
+                          const field = filter.filterOptions.fields.find(
+                            (f) => f.key === activeFilter.key,
+                          )
+                          const options =
+                            fieldOptionsResults[field?.key as string] || []
+                          const option = options.find(
+                            (opt) =>
+                              String(opt.value) === String(activeFilter.value),
+                          )
+                          displayValue =
+                            option?.label || String(activeFilter.value || '')
+                        } else {
+                          displayValue = String(activeFilter.value || '')
+                        }
+
+                        return (
+                          <span
+                            key={`${activeFilter.key}-${index}`}
+                            className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium dark:bg-blue-700/30 dark:text-blue-200"
+                          >
+                            {activeFilter.label}: {displayValue}
+                          </span>
+                        )
+                      })}
+                    </div>
+                    <WiseTableButton
+                      onClick={filter.clearAllFilters}
+                      variant="secondary"
+                      size="xs"
+                    >
+                      × Clear All
+                    </WiseTableButton>
+                  </>
                 )}
               </div>
             </div>
