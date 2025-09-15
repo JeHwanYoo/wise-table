@@ -347,9 +347,9 @@ export const FilterBar = React.memo(function FilterBar({
                   />
                 </div>
 
-                {/* Visual separator */}
-                <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-                  <div className="bg-white dark:bg-gray-800 px-2">
+                {/* Visual separator - positioned at input level */}
+                <div className="absolute left-1/2 top-7 transform -translate-x-1/2 z-10">
+                  <div className="bg-white dark:bg-gray-800 px-1">
                     <svg
                       className="w-4 h-4 text-gray-400"
                       fill="none"
@@ -398,13 +398,6 @@ export const FilterBar = React.memo(function FilterBar({
                 </div>
               </div>
             </div>
-
-            {/* Helper text */}
-            {!hasDateType && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Please select a date type to enable date range selection
-              </p>
-            )}
           </div>
         )
       }
