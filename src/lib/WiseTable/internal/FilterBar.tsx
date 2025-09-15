@@ -96,7 +96,15 @@ export const FilterBar = React.memo(function FilterBar({
     const field = filter.filterOptions.fields.find((f) => f.key === fieldKey)
 
     if (field?.type === 'date-range') {
-      // For date-range, construct value from dateType and date parameters
+      // Prefer local state first for instant UI feedback
+      const localValue = fieldValues[fieldKey] as
+        | { dateType: string; startDate: string; endDate: string }
+        | undefined
+      if (localValue) {
+        return localValue
+      }
+
+      // Fallback to URL parameters
       const dateType =
         urlState.queryState.filters['dateType'] ?? fieldValues['dateType'] ?? ''
       const date =
@@ -111,14 +119,6 @@ export const FilterBar = React.memo(function FilterBar({
         }
       }
 
-      // Return from local state if exists, or check if we have partial URL state
-      const localValue = fieldValues[fieldKey] as
-        | { dateType: string; startDate: string; endDate: string }
-        | undefined
-      if (localValue) {
-        return localValue
-      }
-
       // Default empty state
       return {
         dateType: '',
@@ -127,14 +127,16 @@ export const FilterBar = React.memo(function FilterBar({
       }
     }
 
-    // For other field types, use normal lookup with proper type conversion
-    const urlValue = urlState.queryState.filters[fieldKey]
+    // For other field types, prefer local state first for instant UI feedback
     const localValue = fieldValues[fieldKey]
+    if (localValue !== undefined) {
+      return localValue
+    }
 
+    // Fallback to URL with proper type conversion
+    const urlValue = urlState.queryState.filters[fieldKey]
     if (urlValue !== undefined) {
-      // Apply type conversion for URL values
       if (field?.type === 'select') {
-        // Try to convert to number if the value looks like a number
         const numValue = Number(urlValue)
         if (!isNaN(numValue) && String(numValue) === String(urlValue)) {
           return numValue
@@ -149,7 +151,7 @@ export const FilterBar = React.memo(function FilterBar({
       return urlValue
     }
 
-    return localValue ?? defaultValue
+    return defaultValue
   }
 
   // Pre-compute all field options to ensure hooks are called unconditionally
