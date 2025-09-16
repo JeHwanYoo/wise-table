@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useFilter } from '../hooks/useFilter'
 import { useURLState } from '../hooks/useURLState'
-import { useEditingContext } from '../hooks/useWiseTable'
 import { SearchBox, SearchableSelect, WiseTableButton } from '../ui'
 
 // Active filter display type
@@ -24,7 +23,6 @@ export interface FilterBarProps {
 export const FilterBar = React.memo(function FilterBar({
   className = '',
 }: FilterBarProps) {
-  const { hasUnsavedChanges, discardChanges } = useEditingContext()
   const filter = useFilter()
   const urlState = useURLState()
 
@@ -673,34 +671,6 @@ export const FilterBar = React.memo(function FilterBar({
                 ),
               )}
             </div>
-          </div>
-        )}
-
-        {/* Unsaved Changes Warning */}
-        {hasUnsavedChanges() && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-yellow-100 border border-yellow-300 rounded-md text-sm text-yellow-800 dark:bg-yellow-700/20 dark:border-yellow-600 dark:text-yellow-300">
-            <svg
-              className="w-4 h-4 text-yellow-600 dark:text-yellow-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z"
-              />
-            </svg>
-            <span className="font-medium">You have unsaved changes</span>
-            <WiseTableButton
-              onClick={discardChanges}
-              size="sm"
-              variant="secondary"
-              className="ml-auto"
-            >
-              Discard Changes
-            </WiseTableButton>
           </div>
         )}
       </div>

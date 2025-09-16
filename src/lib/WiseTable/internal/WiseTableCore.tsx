@@ -18,6 +18,7 @@ import { TableActions, type TableActionsProps } from './TableActions'
 import { TableBody } from './TableBody'
 import { TableFooter } from './TableFooter'
 import { TableHeader } from './TableHeader'
+import { UnsavedChangesHelper } from './UnsavedChangesHelper'
 
 // Generic type utility for Zod schema inference
 export type InferSchema<T extends ZodType> = zInfer<T>
@@ -272,6 +273,7 @@ function WiseTableCoreImpl<
               <div className="sticky top-0 z-30 bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-800">
                 {props.tableActions && <TableActions {...props.tableActions} />}
                 <FilterBar />
+                <UnsavedChangesHelper />
               </div>
               <div
                 className={`overflow-x-auto overflow-y-auto ${props.tableHeight ? '' : 'max-h-96'}`}
