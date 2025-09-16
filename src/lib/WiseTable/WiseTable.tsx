@@ -45,11 +45,12 @@ export function WiseTable<
     crudActions,
     tableActions,
     componentProps,
+    pagination,
     ...coreProps
   } = props
 
   return (
-    <URLStateProvider>
+    <URLStateProvider paginationConfig={pagination}>
       <LoadingStateProvider>
         <FilterProvider
           filterOptions={filterOptions}

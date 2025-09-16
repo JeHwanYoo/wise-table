@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { useURLState } from '../hooks/useURLState'
 import { useEditingContext } from '../hooks/useWiseTable'
 import { WiseTableButton } from '../ui'
-import { SearchableSelect } from '../ui/SearchableSelect'
 
 export interface TableFooterProps<T> {
   data: T[] | undefined
@@ -25,9 +25,11 @@ export function TableFooter<T>({
   onPageSizeChange,
   onPageChange,
 }: TableFooterProps<T>) {
+  const urlState = useURLState()
   const { hasUnsavedChanges } = useEditingContext()
   const isDirtyState = hasUnsavedChanges()
   const [pageInput, setPageInput] = useState('')
+  const [limitInput, setLimitInput] = useState('')
 
   const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -39,6 +41,16 @@ export function TableFooter<T>({
 
   const handlePageInputSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!pagination || !pageInput) return
+
+    const pageNum = parseInt(pageInput, 10)
+    if (pageNum >= 1 && pageNum <= pagination.totalPages) {
+      onPageChange?.(pageNum)
+      setPageInput('')
+    }
+  }
+
+  const handlePageInputBlur = () => {
     if (!pagination || !pageInput) return
 
     const pageNum = parseInt(pageInput, 10)
@@ -60,6 +72,52 @@ export function TableFooter<T>({
       }
     } else if (e.key === 'Escape') {
       setPageInput('')
+    }
+  }
+
+  const handleLimitInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    // Only allow numbers
+    if (value === '' || /^\d+$/.test(value)) {
+      setLimitInput(value)
+    }
+  }
+
+  const handleLimitInputSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!limitInput) return
+
+    const limitNum = parseInt(limitInput, 10)
+    if (limitNum >= 1) {
+      onPageSizeChange?.(limitNum)
+      setLimitInput('')
+    }
+  }
+
+  const handleLimitInputBlur = () => {
+    if (!limitInput) return
+
+    const limitNum = parseInt(limitInput, 10)
+    if (limitNum >= 1) {
+      onPageSizeChange?.(limitNum)
+      setLimitInput('')
+    }
+  }
+
+  const handleLimitInputKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (!limitInput) return
+
+      const limitNum = parseInt(limitInput, 10)
+      if (limitNum >= 1) {
+        onPageSizeChange?.(limitNum)
+        setLimitInput('')
+      }
+    } else if (e.key === 'Escape') {
+      setLimitInput('')
     }
   }
 
@@ -207,6 +265,7 @@ export function TableFooter<T>({
                 value={pageInput}
                 onChange={handlePageInputChange}
                 onKeyDown={handlePageInputKeyDown}
+                onBlur={handlePageInputBlur}
                 placeholder={pagination.page.toString()}
                 disabled={isDirtyState}
                 className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed bg-white text-gray-800 placeholder-gray-400 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-400 dark:focus:border-blue-400 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
@@ -219,23 +278,31 @@ export function TableFooter<T>({
             </form>
           )}
 
-          {/* Page size selector */}
-          <SearchableSelect
-            options={[
-              { value: 10, label: '10 per page' },
-              { value: 25, label: '25 per page' },
-              { value: 50, label: '50 per page' },
-              { value: 100, label: '100 per page' },
-            ]}
-            value={(pagination?.pageSize ?? 25) as number}
-            onChange={(val) =>
-              onPageSizeChange?.(Number(Array.isArray(val) ? val[0] : val))
-            }
-            disabled={!pagination || isDirtyState}
-            className="min-w-[160px]"
-            placement="top"
-            searchable={false}
-          />
+          {/* Page size input */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Show
+            </span>
+            <form
+              onSubmit={handleLimitInputSubmit}
+              className="flex items-center"
+            >
+              <input
+                type="text"
+                value={limitInput}
+                onChange={handleLimitInputChange}
+                onKeyDown={handleLimitInputKeyDown}
+                onBlur={handleLimitInputBlur}
+                placeholder={String(pagination?.pageSize ?? 25)}
+                disabled={!pagination || isDirtyState}
+                className="w-16 px-2 py-1 text-sm text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+                title={`Max: ${urlState?.paginationConfig?.maxLimitSize || 100}`}
+              />
+            </form>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              per page
+            </span>
+          </div>
         </div>
       </div>
     </div>

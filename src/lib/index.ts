@@ -52,7 +52,12 @@ export type {
   UpdateItemsPayload,
   WiseTableHook,
 } from './WiseTable/hooks/useWiseTable'
-export type { ColumnType, SelectOption } from './WiseTable/types/common'
+export type {
+  ColumnType,
+  Pagination,
+  PaginationConfig,
+  SelectOption,
+} from './WiseTable/types/common'
 export type { DefaultComponentProps } from './WiseTable/types/ComponentInterfaces'
 
 // Utility functions

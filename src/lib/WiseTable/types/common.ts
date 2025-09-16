@@ -19,3 +19,18 @@ export interface SelectOption<T = unknown> {
     intensity: import('../utils/badgeColors').IntensityLevel
   }
 }
+
+// Pagination interface
+export interface Pagination {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
+// Pagination configuration for WiseTable
+export interface PaginationConfig {
+  initialPageNumber?: number // default: 1
+  initialLimitSize?: number // default: 25
+  maxLimitSize?: number // default: 100
+}

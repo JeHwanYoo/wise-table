@@ -5,16 +5,25 @@ import {
   type URLState,
   type URLStateContextValue,
 } from '../contexts/URLStateContext'
+import type { PaginationConfig } from '../types/common'
 
 // URL state management for pagination, search, and filters
 // Context and types moved to contexts/URLStateContext
 
 // Parse URL search params into state
-function parseURLState(): URLState {
+function parseURLState(paginationConfig?: PaginationConfig): URLState {
   const sp = new URLSearchParams(window.location.search)
 
-  const page = Math.max(1, Number(sp.get('page') || '1'))
-  const limit = Math.max(1, Number(sp.get('limit') || '25'))
+  const defaultPage = paginationConfig?.initialPageNumber || 1
+  const defaultLimit = paginationConfig?.initialLimitSize || 25
+  const maxLimit = paginationConfig?.maxLimitSize || 100
+
+  const page = Math.max(1, Number(sp.get('page') || String(defaultPage)))
+  const requestedLimit = Math.max(
+    1,
+    Number(sp.get('limit') || String(defaultLimit)),
+  )
+  const limit = Math.min(requestedLimit, maxLimit) // Enforce max limit
   const search = sp.get('search') || ''
 
   const filters: Record<string, unknown> = {}
@@ -83,12 +92,22 @@ function syncToURL(state: URLState): void {
 }
 
 // Provider component
-export function URLStateProvider({ children }: { children: React.ReactNode }) {
+export function URLStateProvider({
+  children,
+  paginationConfig,
+}: {
+  children: React.ReactNode
+  paginationConfig?: PaginationConfig
+}) {
   // Confirmed state (used for queries and URL)
-  const [confirmedState, setConfirmedState] = useState<URLState>(parseURLState)
+  const [confirmedState, setConfirmedState] = useState<URLState>(() =>
+    parseURLState(paginationConfig),
+  )
 
   // UI state (used for immediate display)
-  const [uiState, setUIState] = useState<URLState>(parseURLState)
+  const [uiState, setUIState] = useState<URLState>(() =>
+    parseURLState(paginationConfig),
+  )
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -100,14 +119,14 @@ export function URLStateProvider({ children }: { children: React.ReactNode }) {
   // Listen for browser back/forward
   useEffect(() => {
     const handlePopState = () => {
-      const newState = parseURLState()
+      const newState = parseURLState(paginationConfig)
       setConfirmedState(newState)
       setUIState(newState)
     }
 
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [])
+  }, [paginationConfig])
 
   // Debounced confirmation of UI changes
   const confirmChanges = useCallback(
@@ -149,11 +168,13 @@ export function URLStateProvider({ children }: { children: React.ReactNode }) {
 
   const setLimit = useCallback(
     (limit: number) => {
-      const newState = { ...uiState, limit: Math.max(1, limit), page: 1 }
+      const maxLimit = paginationConfig?.maxLimitSize || 100
+      const validatedLimit = Math.min(Math.max(1, limit), maxLimit)
+      const newState = { ...uiState, limit: validatedLimit, page: 1 }
       setUIState(newState)
       confirmChanges(newState)
     },
-    [uiState, confirmChanges],
+    [uiState, confirmChanges, paginationConfig],
   )
 
   // Debounced search confirmation to avoid rapid URL updates
@@ -250,6 +271,7 @@ export function URLStateProvider({ children }: { children: React.ReactNode }) {
       queryState,
       uiState: memoizedUIState,
       isDebouncing,
+      paginationConfig,
       setPage,
       setLimit,
       setSearch,
@@ -264,6 +286,7 @@ export function URLStateProvider({ children }: { children: React.ReactNode }) {
       queryState,
       memoizedUIState,
       isDebouncing,
+      paginationConfig,
       setPage,
       setLimit,
       setSearch,

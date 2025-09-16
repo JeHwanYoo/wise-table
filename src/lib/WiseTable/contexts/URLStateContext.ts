@@ -1,4 +1,5 @@
 import { createContext } from 'react'
+import type { PaginationConfig } from '../types/common'
 
 // URL state models
 export interface URLState {
@@ -12,6 +13,7 @@ export interface URLStateContextValue {
   queryState: URLState
   uiState: URLState
   isDebouncing: boolean
+  paginationConfig?: PaginationConfig
   setPage: (page: number) => void
   setLimit: (limit: number) => void
   setSearch: (search: string) => void

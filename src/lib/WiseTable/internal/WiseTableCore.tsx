@@ -9,7 +9,11 @@ import {
   EditingProvider,
   TableStoreProvider,
 } from '../providers'
-import type { ColumnType, SelectOption } from '../types/common'
+import type {
+  ColumnType,
+  PaginationConfig,
+  SelectOption,
+} from '../types/common'
 import type { DefaultComponentProps } from '../types/ComponentInterfaces'
 import { ErrorState } from '../ui/ErrorState'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
@@ -121,6 +125,7 @@ export interface WiseTableProps<
   defaultFilters?: FilterParams<Q extends ZodType ? zInfer<Q> : unknown>
   requireReason?: ReasonRequirements
   componentProps?: DefaultComponentProps
+  pagination?: PaginationConfig
 }
 
 function WiseTableCoreImpl<
