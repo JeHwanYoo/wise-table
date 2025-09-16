@@ -295,7 +295,7 @@ export function TableFooter<T>({
                 onBlur={handleLimitInputBlur}
                 placeholder={String(pagination?.pageSize ?? 25)}
                 disabled={!pagination || isDirtyState}
-                className="w-16 px-2 py-1 text-sm text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+                className="w-16 px-2 py-1 text-sm text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
                 title={`Max: ${urlState?.paginationConfig?.maxLimitSize || 100}`}
               />
             </form>
