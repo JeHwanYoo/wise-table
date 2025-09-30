@@ -238,7 +238,7 @@ export function EditableCell<T>({
 
     return (
       <td
-        className={`px-3 py-1 border-b border-gray-200 text-sm dark:border-gray-600 mx-auto ${
+        className={`px-3 py-1 border-b border-gray-200 text-sm dark:border-gray-600 mx-auto select-text ${
           canEdit ? 'cursor-pointer' : ''
         }`}
         onDoubleClick={canEdit ? handleCellClick : undefined}
