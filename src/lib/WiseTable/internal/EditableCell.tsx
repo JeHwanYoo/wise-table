@@ -241,11 +241,10 @@ export function EditableCell<T>({
         className={`px-3 py-1 border-b border-gray-200 text-sm dark:border-gray-600 mx-auto ${
           canEdit ? 'cursor-pointer' : ''
         }`}
-        onClick={canEdit ? handleCellClick : undefined}
-        onMouseDown={canEdit ? undefined : (e) => e.preventDefault()}
+        onDoubleClick={canEdit ? handleCellClick : undefined}
         tabIndex={canEdit ? 0 : -1}
         aria-disabled={!canEdit}
-        title={canEdit ? 'Click to edit' : undefined}
+        title={canEdit ? 'Double-click to edit' : undefined}
         style={column.width !== undefined ? { width: column.width } : undefined}
       >
         {displayContent}
