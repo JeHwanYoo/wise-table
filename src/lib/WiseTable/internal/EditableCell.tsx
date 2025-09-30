@@ -239,12 +239,12 @@ export function EditableCell<T>({
     return (
       <td
         className={`px-3 py-1 border-b border-gray-200 text-sm dark:border-gray-600 mx-auto select-text ${
-          canEdit ? 'cursor-pointer' : ''
+          canEdit ? 'cursor-pointer' : 'cursor-text'
         }`}
-        onDoubleClick={canEdit ? handleCellClick : undefined}
+        onClick={canEdit ? handleCellClick : undefined}
         tabIndex={canEdit ? 0 : -1}
         aria-disabled={!canEdit}
-        title={canEdit ? 'Double-click to edit' : undefined}
+        title={canEdit ? 'Click to edit' : undefined}
         style={column.width !== undefined ? { width: column.width } : undefined}
       >
         {displayContent}

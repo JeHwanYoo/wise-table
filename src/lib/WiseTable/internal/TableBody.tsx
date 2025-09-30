@@ -41,7 +41,7 @@ export function TableBody<T, TIdColumn extends keyof T>({
                     : 'hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
-              <td className="px-6 py-4 whitespace-nowrap border-b border-gray-200">
+              <td className="px-6 py-4 whitespace-nowrap border-b border-gray-200 dark:border-gray-600">
                 <input
                   type="checkbox"
                   className="h-5 w-5 rounded border-gray-300 dark:border-gray-700"
